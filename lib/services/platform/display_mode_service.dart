@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:kazumi/services/logging/logger.dart';
+import 'package:kazumi/services/platform/window_effect_service.dart';
 import 'package:window_manager/window_manager.dart';
 
 class DisplayModeService {
@@ -17,7 +18,13 @@ class DisplayModeService {
       if (defaultTargetPlatform == TargetPlatform.linux ||
           defaultTargetPlatform == TargetPlatform.macOS ||
           defaultTargetPlatform == TargetPlatform.windows) {
-        await _attempt(() => windowManager.setFullScreen(fullscreen));
+        await _attempt(() async {
+          // On Windows even a redundant exit resets DWM's glass frame margins.
+          if (await windowManager.isFullScreen() != fullscreen) {
+            await windowManager.setFullScreen(fullscreen);
+          }
+          if (!fullscreen) await WindowEffectService.instance.reapply();
+        });
         return;
       }
 

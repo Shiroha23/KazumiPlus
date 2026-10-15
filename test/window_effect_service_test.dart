@@ -132,4 +132,105 @@ void main() {
       1,
     );
   });
+
+  test(
+    'reapply restores unchanged native material with the current theme',
+    () async {
+      final calls = <(acrylic.WindowEffect, Color, bool)>[];
+      final effects = WindowEffectService(
+        materials: supportedWindowMaterials('windows', 26100),
+        initializeNative: () async {},
+        applyNative: (effect, color, dark) async =>
+            calls.add((effect, color, dark)),
+      );
+      await effects.initialize(material: 'mica', opacity: .45);
+      final theme = ThemeData.dark();
+      effects.syncTheme(theme);
+      await effects.setMaterial(WindowMaterial.mica);
+      expect(calls, hasLength(1));
+      effects.syncTheme(theme);
+      await effects.setMaterial(WindowMaterial.mica);
+      expect(
+        calls,
+        hasLength(1),
+        reason: 'Unchanged theme sync remains cached.',
+      );
+
+      await effects.reapply();
+      expect(calls, hasLength(2));
+      expect(calls.last, calls.first);
+      expect(calls.last.$1, acrylic.WindowEffect.mica);
+      expect(calls.last.$3, isTrue);
+      expect(effects.material, WindowMaterial.mica);
+      expect(effects.opacity, .45);
+      expect(effects.enabled, isTrue);
+    },
+  );
+
+  test('reapply cannot reenable a disabled material', () async {
+    final calls = <acrylic.WindowEffect>[];
+    final effects = WindowEffectService(
+      materials: supportedWindowMaterials('windows', 26100),
+      initializeNative: () async {},
+      applyNative: (effect, _, _) async => calls.add(effect),
+    );
+    await effects.initialize();
+    await effects.reapply();
+    expect(calls, isEmpty);
+    await effects.setMaterial(WindowMaterial.mica);
+    await effects.setMaterial(WindowMaterial.disabled);
+    await effects.reapply();
+    expect(calls, [acrylic.WindowEffect.mica, acrylic.WindowEffect.disabled]);
+  });
+
+  test(
+    'reapply waits for pending native changes and uses the latest material',
+    () async {
+      final started = Completer<void>();
+      final release = Completer<void>();
+      final calls = <acrylic.WindowEffect>[];
+      final effects = WindowEffectService(
+        materials: supportedWindowMaterials('windows', 26100),
+        initializeNative: () async {},
+        applyNative: (effect, _, _) async {
+          calls.add(effect);
+          if (calls.length == 1) {
+            started.complete();
+            await release.future;
+          }
+        },
+      );
+      await effects.initialize();
+      final change = effects.setMaterial(WindowMaterial.acrylic);
+      await started.future;
+      final restore = effects.reapply();
+      expect(calls, [acrylic.WindowEffect.acrylic]);
+      release.complete();
+      await Future.wait([change, restore]);
+      expect(calls, [
+        acrylic.WindowEffect.acrylic,
+        acrylic.WindowEffect.acrylic,
+      ]);
+      expect(effects.material, WindowMaterial.acrylic);
+    },
+  );
+
+  test(
+    'failed restoration falls back to an opaque app without blocking exit',
+    () async {
+      var calls = 0;
+      final effects = WindowEffectService(
+        materials: supportedWindowMaterials('windows', 26100),
+        initializeNative: () async {},
+        applyNative: (_, _, _) async {
+          if (++calls > 1) throw StateError('composition unavailable');
+        },
+      );
+      await effects.initialize();
+      await effects.setMaterial(WindowMaterial.mica);
+      await expectLater(effects.reapply(), completes);
+      expect(effects.enabled, isFalse);
+      expect(effects.decorateTheme(ThemeData()).scaffoldBackgroundColor.a, 1);
+    },
+  );
 }

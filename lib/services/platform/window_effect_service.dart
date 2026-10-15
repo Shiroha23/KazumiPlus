@@ -141,32 +141,43 @@ class WindowEffectService extends ChangeNotifier {
     if (!available) return;
     final surface = _surface;
     final brightness = _brightness;
-    unawaited(
-      _operations.run(() async {
-        try {
-          await _apply(_material, surface, brightness);
-        } catch (error, stackTrace) {
-          // Restore an opaque Flutter background if native composition fails.
-          _material = WindowMaterial.disabled;
-          _available = false;
-          notifyListeners();
-          KazumiLogger().w(
-            'Unable to apply window effect',
-            error: error,
-            stackTrace: stackTrace,
-          );
-        }
-      }),
-    );
+    unawaited(_operations.run(() => _applyOrDisable(surface, brightness)));
+  }
+
+  /// Native fullscreen changes can reset composition without changing the theme.
+  Future<void> reapply() => _operations.run(() async {
+    if (!enabled) return;
+    await _applyOrDisable(_surface, _brightness, force: true);
+  });
+
+  Future<void> _applyOrDisable(
+    Color surface,
+    Brightness brightness, {
+    bool force = false,
+  }) async {
+    try {
+      await _apply(_material, surface, brightness, force: force);
+    } catch (error, stackTrace) {
+      // Restore an opaque Flutter background if native composition fails.
+      _material = WindowMaterial.disabled;
+      _available = false;
+      notifyListeners();
+      KazumiLogger().w(
+        'Unable to apply window effect',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<void> _apply(
     WindowMaterial material,
     Color surface,
-    Brightness brightness,
-  ) async {
+    Brightness brightness, {
+    bool force = false,
+  }) async {
     final request = (material, surface, brightness);
-    if (_applied == request) return;
+    if (!force && _applied == request) return;
     // Keep default startup untouched until the user enables a material.
     if (_applied == null && material == WindowMaterial.disabled) return;
     final effect = switch (material) {
