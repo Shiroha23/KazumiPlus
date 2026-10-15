@@ -4,7 +4,9 @@ import 'dart:ui' as ui;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kazumi/bean/card/bangumi_card.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
+import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 
 void main() {
   late ui.Image initialFrame;
@@ -22,6 +24,65 @@ void main() {
     intermediateFrame.dispose();
     newFrame.dispose();
   });
+
+  for (final enableHero in [true, false]) {
+    testWidgets(
+      'poster resizes without replacing its image (hero: $enableHero)',
+      (tester) async {
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetDevicePixelRatio);
+        addTearDown(imageCache.clear);
+        addTearDown(imageCache.clearLiveImages);
+
+        const url = 'https://example.com/poster.png';
+        final initial = await _pendingDecode(url, 512);
+        initial.complete(ImageInfo(image: initialFrame.clone()));
+        final item = BangumiItem.fromJson({
+          'id': 1,
+          'name': 'Poster',
+          'images': {'large': url},
+          'rating': <String, dynamic>{},
+        });
+
+        Widget poster(double width) => MaterialApp(
+          home: Center(
+            child: SizedBox(
+              width: width,
+              height: width / 0.65 + 80,
+              child: BangumiCardV(bangumiItem: item, enableHero: enableHero),
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(poster(120));
+        await tester.pumpAndSettle();
+        final originalState = tester.state(find.byType(Image));
+        final originalProvider = tester.widget<Image>(find.byType(Image)).image;
+
+        // Use the normal fade durations and sample individual resize frames.
+        for (final width in [121.0, 160.0, 200.0, 159.0, 120.0]) {
+          await tester.pumpWidget(poster(width));
+          await tester.pump(const Duration(milliseconds: 16));
+          expect(_hasFrame(tester, 16), isTrue);
+          expect(tester.state(find.byType(Image)), same(originalState));
+          expect(
+            tester.widget<Image>(find.byType(Image)).image,
+            originalProvider,
+          );
+          expect(
+            find.descendant(
+              of: find.byType(NetworkImgLayer),
+              matching: find.byType(FadeTransition),
+            ),
+            findsNothing,
+          );
+          expect(tester.getSize(find.byType(NetworkImgLayer)).width, width);
+        }
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      },
+    );
+  }
 
   testWidgets('keeps the cover visible during consecutive resize decodes', (
     tester,

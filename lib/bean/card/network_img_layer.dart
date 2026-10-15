@@ -19,7 +19,8 @@ class NetworkImgLayer extends StatelessWidget {
     this.color,
     this.colorBlendMode,
     this.borderRadius,
-  });
+    this.decodeWidth,
+  }) : assert(decodeWidth == null || decodeWidth > 0);
 
   final String? src;
   final double width;
@@ -33,6 +34,8 @@ class NetworkImgLayer extends StatelessWidget {
   final Color? color;
   final BlendMode? colorBlendMode;
   final BorderRadius? borderRadius;
+  // Fixed physical-pixel decode width for images that resize frequently.
+  final int? decodeWidth;
 
   static Widget heroFlightShuttleBuilder(
     BuildContext flightContext,
@@ -94,6 +97,7 @@ class NetworkImgLayer extends StatelessWidget {
   }
 
   (int?, int?) _cacheSize(BuildContext context) {
+    if (decodeWidth != null) return (decodeWidth, null);
     final cacheWidth = width.cacheSize(context);
     final cacheHeight = height.cacheSize(context);
     final aspectRatio = width / height;

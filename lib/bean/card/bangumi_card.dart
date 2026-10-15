@@ -17,6 +17,9 @@ class BangumiCardV extends StatelessWidget {
   final bool canTap;
   final bool enableHero;
 
+  // Reuse one decoded cover while the window changes its display size.
+  static const _coverDecodeWidth = 512;
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -52,12 +55,14 @@ class BangumiCardV extends StatelessWidget {
                             src: bangumiItem.images['large'] ?? '',
                             width: maxWidth,
                             height: maxHeight,
+                            decodeWidth: _coverDecodeWidth,
                           ),
                         )
                       : NetworkImgLayer(
                           src: bangumiItem.images['large'] ?? '',
                           width: maxWidth,
                           height: maxHeight,
+                          decodeWidth: _coverDecodeWidth,
                         );
                 }),
               ),
