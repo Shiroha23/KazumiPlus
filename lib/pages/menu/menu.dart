@@ -6,6 +6,7 @@ import 'package:kazumi/bean/widget/embedded_native_control_area.dart';
 import 'package:kazumi/navigation.dart';
 import 'package:kazumi/pages/menu/route_visibility.dart';
 import 'package:kazumi/pages/router.dart';
+import 'package:kazumi/services/platform/window_effect_service.dart';
 
 class ScaffoldMenu extends StatefulWidget {
   const ScaffoldMenu({super.key, required this.location});
@@ -129,7 +130,7 @@ class _ScaffoldMenu extends State<ScaffoldMenu> with RouteAware {
     }
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
+        color: windowSurfaceColor(context, Theme.of(context).colorScheme.primaryContainer),
         borderRadius: borderRadius,
       ),
       child: child,
@@ -174,12 +175,12 @@ class _ScaffoldMenu extends State<ScaffoldMenu> with RouteAware {
       bottomLeft: Radius.circular(16),
     );
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+      backgroundColor: windowSurfaceColor(context, Theme.of(context).colorScheme.surfaceContainer),
       body: Row(
         children: [
           EmbeddedNativeControlArea(
             child: NavigationRail(
-              backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+              backgroundColor: windowSurfaceColor(context, Theme.of(context).colorScheme.surfaceContainer),
               groupAlignment: 1,
               leading: FloatingActionButton(
                 elevation: 0,

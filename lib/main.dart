@@ -24,6 +24,7 @@ import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/navigation.dart';
 import 'package:kazumi/services/plugin/plugin_cookie_manager.dart';
 import 'package:kazumi/webview/login/website_browser.dart';
+import 'package:kazumi/services/platform/window_effect_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -77,6 +78,10 @@ void main() async {
   final showWindowButton = DesktopWindowConfig.showWindowButton;
   if (isDesktop()) {
     await windowManager.ensureInitialized();
+    await WindowEffectService.instance.initialize(
+      material: GStorage.getSetting(SettingsKeys.windowMaterial),
+      opacity: GStorage.getSetting(SettingsKeys.windowBackgroundOpacity),
+    );
     final lowResolution = await isLowResolution();
     final windowOptions = WindowOptions(
       size: lowResolution ? const Size(840, 600) : const Size(1280, 860),

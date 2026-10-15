@@ -13,6 +13,7 @@ import 'package:kazumi/bean/settings/settings_list.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:kazumi/utils/device.dart';
 import 'package:kazumi/utils/theme.dart';
+import 'package:kazumi/services/platform/window_effect_service.dart';
 
 class ThemeSettingsPage extends StatefulWidget {
   const ThemeSettingsPage({super.key});
@@ -29,6 +30,35 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
   late bool showWindowButton;
   late bool useSystemFont;
   late final ThemeProvider themeProvider;
+  bool _savingWindowMaterial = false;
+
+  Future<void> _updateWindowMaterial(WindowMaterial material) async {
+    if (_savingWindowMaterial) return;
+    final effects = WindowEffectService.instance;
+    final previous = effects.material;
+    setState(() => _savingWindowMaterial = true);
+    try {
+      await effects.setMaterial(material);
+      await GStorage.putSetting(SettingsKeys.windowMaterial, material.name);
+    } catch (_) {
+      if (effects.material != previous) {
+        try {
+          await effects.setMaterial(previous);
+        } catch (_) {}
+      }
+      if (mounted) KazumiDialog.showToast(message: '无法应用窗口效果，请重试');
+    } finally {
+      if (mounted) setState(() => _savingWindowMaterial = false);
+    }
+  }
+
+  Future<void> _saveWindowOpacity(double value) async {
+    try {
+      await GStorage.putSetting(SettingsKeys.windowBackgroundOpacity, value);
+    } catch (_) {
+      if (mounted) KazumiDialog.showToast(message: '背景浓度保存失败，请重试');
+    }
+  }
 
   @override
   void initState() {
@@ -40,6 +70,17 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
     showWindowButton = GStorage.getSetting(SettingsKeys.showWindowButton);
     useSystemFont = GStorage.getSetting(SettingsKeys.useSystemFont);
     themeProvider = context.read<ThemeProvider>();
+    WindowEffectService.instance.addListener(_refreshWindowEffects);
+  }
+
+  void _refreshWindowEffects() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    WindowEffectService.instance.removeListener(_refreshWindowEffects);
+    super.dispose();
   }
 
   void setTheme(Color? color) {
@@ -127,6 +168,7 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final effects = WindowEffectService.instance;
     return SettingsDetailScaffold(
       title: const Text('外观设置'),
       body: SettingsList(
@@ -251,6 +293,35 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
             SettingsSection(
               title: Text('窗口'),
               tiles: [
+                if (effects.materials.length > 1) ...[
+                  SettingsDropdownTile<WindowMaterial>(
+                    leading: Icons.blur_on_rounded,
+                    title: const Text('窗口效果'),
+                    description: Text(effects.available
+                        ? '立即生效，随应用主题切换深浅颜色'
+                        : '当前系统未能初始化窗口效果'),
+                    enabled: effects.available && !_savingWindowMaterial,
+                    value: effects.material,
+                    options: {
+                      for (final material in effects.materials)
+                        material: material.label,
+                    },
+                    onChanged: _updateWindowMaterial,
+                  ),
+                  if (effects.enabled)
+                    SettingsSliderTile(
+                      leading: Icons.opacity_rounded,
+                      title: const Text('背景浓度'),
+                      description: const Text('调节窗口背景与桌面的融合程度'),
+                      value: effects.opacity,
+                      valueLabel: '${(effects.opacity * 100).round()}%',
+                      min: 0.15,
+                      max: 0.85,
+                      divisions: 14,
+                      onChanged: effects.setOpacity,
+                      onChangeEnd: _saveWindowOpacity,
+                    ),
+                ],
                 SettingsTile.switchTile(
                   leading: Icons.web_asset_rounded,
                   onToggle: (value) async {

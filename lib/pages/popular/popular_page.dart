@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:kazumi/services/platform/window_effect_service.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/widget/bangumi_mirror_error_widget.dart';
 import 'package:kazumi/bean/widget/kazumi_menu.dart';
@@ -166,7 +167,7 @@ class _PopularPageState extends State<PopularPage> {
       elevation: 0,
       titleSpacing: 0,
       centerTitle: false,
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: windowSurfaceColor(context, Theme.of(context).colorScheme.surface),
       actions: buildActions(),
       title: null,
       flexibleSpace: SafeArea(

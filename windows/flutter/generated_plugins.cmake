@@ -7,6 +7,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
   dynamic_color
   file_selector_windows
+  flutter_acrylic
   flutter_volume_controller
   media_kit_video
   screen_retriever_windows

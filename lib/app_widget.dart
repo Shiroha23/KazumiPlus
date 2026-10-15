@@ -16,6 +16,7 @@ import 'package:kazumi/navigation.dart';
 import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/utils/device.dart';
 import 'package:kazumi/utils/theme.dart';
+import 'package:kazumi/services/platform/window_effect_service.dart';
 
 class AppWidget extends StatefulWidget {
   const AppWidget({super.key});
@@ -37,7 +38,12 @@ class _AppWidgetState extends State<AppWidget>
     trayManager.addListener(this);
     windowManager.addListener(this);
     WidgetsBinding.instance.addObserver(this);
+    WindowEffectService.instance.addListener(_refreshWindowEffects);
     _initializePlatformIntegrations();
+  }
+
+  void _refreshWindowEffects() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _initializePlatformIntegrations() async {
@@ -76,6 +82,7 @@ class _AppWidgetState extends State<AppWidget>
     trayManager.removeListener(this);
     windowManager.removeListener(this);
     WidgetsBinding.instance.removeObserver(this);
+    WindowEffectService.instance.removeListener(_refreshWindowEffects);
     super.dispose();
   }
 
@@ -279,6 +286,7 @@ class _AppWidgetState extends State<AppWidget>
     final ThemeProvider themeProvider = context.watch<ThemeProvider>();
     bool oledEnhance = GStorage.getSetting(SettingsKeys.oledEnhance);
 
+    final windowEffects = WindowEffectService.instance;
     var app = DynamicColorBuilder(
       builder: (theme, darkTheme) {
         final useDynamicColor =
@@ -310,11 +318,24 @@ class _AppWidgetState extends State<AppWidget>
           ],
           locale: const Locale.fromSubtags(
               languageCode: 'zh', scriptCode: 'Hans', countryCode: "CN"),
-          theme: lightTheme,
-          darkTheme: effectiveDarkTheme,
+          theme: windowEffects.decorateTheme(lightTheme),
+          darkTheme: windowEffects.decorateTheme(effectiveDarkTheme),
           themeMode: themeProvider.themeMode,
           scaffoldMessengerKey: rootScaffoldMessengerKey,
           routerConfig: ModularApp.routerConfigOf(context),
+          builder: (context, child) {
+            final baseTheme = Theme.of(context).brightness == Brightness.dark
+                ? effectiveDarkTheme
+                : lightTheme;
+            windowEffects.syncTheme(baseTheme);
+            return ColoredBox(
+              color: windowEffects.enabled
+                  ? baseTheme.colorScheme.surface
+                      .withValues(alpha: windowEffects.opacity)
+                  : baseTheme.scaffoldBackgroundColor,
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
         );
       },
     );

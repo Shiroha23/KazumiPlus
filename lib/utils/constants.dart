@@ -41,8 +41,14 @@ const PageTransitionsTheme pageTransitionsTheme2024 =
 final PageTransitionsTheme settingsPageTransitionsTheme = PageTransitionsTheme(
   builders: {
     ..._pageTransitionBuilders,
-    TargetPlatform.linux: const FadeForwardsPageTransitionsBuilder(),
-    TargetPlatform.windows: const FadeForwardsPageTransitionsBuilder(),
+    // The settings shell already supplies the background. An opaque transition
+    // scrim would briefly cover translucent desktop window materials.
+    TargetPlatform.linux: const FadeForwardsPageTransitionsBuilder(
+      backgroundColor: Colors.transparent,
+    ),
+    TargetPlatform.windows: const FadeForwardsPageTransitionsBuilder(
+      backgroundColor: Colors.transparent,
+    ),
   },
 );
 
