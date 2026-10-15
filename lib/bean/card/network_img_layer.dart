@@ -70,11 +70,14 @@ class NetworkImgLayer extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       borderRadius: _borderRadius,
       child: CachedNetworkImage(
+        key: ValueKey(imageUrl),
         imageUrl: imageUrl,
         width: width,
         height: height,
         memCacheWidth: memCacheWidth,
         memCacheHeight: memCacheHeight,
+        // Keep the displayed frame while a resized decode is loading.
+        useOldImageOnUrlChange: true,
         fit: fit,
         fadeOutDuration: fadeOutDuration ?? const Duration(milliseconds: 120),
         fadeInDuration: fadeInDuration ?? const Duration(milliseconds: 120),

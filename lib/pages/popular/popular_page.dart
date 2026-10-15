@@ -153,23 +153,43 @@ class _PopularPageState extends State<PopularPage> {
     }
     return SliverPadding(
       padding: const EdgeInsets.all(8),
-      sliver: SliverGrid(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          // 行间距
-          mainAxisSpacing: StyleString.cardSpace - 2,
-          // 列间距
-          crossAxisSpacing: StyleString.cardSpace,
-          // 列数
-          crossAxisCount: crossCount,
-          mainAxisExtent:
-              MediaQuery.of(context).size.width / crossCount / 0.65 +
-              MediaQuery.textScalerOf(context).scale(32.0),
-        ),
-        delegate: SliverChildBuilderDelegate((BuildContext context, int index) {
-          return bangumiList.isNotEmpty
-              ? BangumiCardV(bangumiItem: bangumiList[index])
-              : null;
-        }, childCount: bangumiList.isNotEmpty ? bangumiList.length : 10),
+      sliver: SliverLayoutBuilder(
+        builder: (context, constraints) {
+          const spacing = 12.0;
+          final cardWidth =
+              (constraints.crossAxisExtent - spacing * (crossCount - 1)) /
+                  crossCount;
+          final titlePainter = TextPainter(
+            text: TextSpan(
+              text: '番剧',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.3,
+                  ),
+            ),
+            textDirection: Directionality.of(context),
+            textScaler:
+                MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.1),
+          );
+          // Match BangumiContent's three title lines and vertical padding.
+          final titleHeight =
+              (titlePainter.preferredLineHeight * 3 + 4).ceilToDouble();
+          titlePainter.dispose();
+          return SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              mainAxisSpacing: spacing,
+              crossAxisSpacing: spacing,
+              crossAxisCount: crossCount,
+              mainAxisExtent: cardWidth / 0.65 + titleHeight,
+            ),
+            delegate:
+                SliverChildBuilderDelegate((BuildContext context, int index) {
+              return bangumiList.isNotEmpty
+                  ? BangumiCardV(bangumiItem: bangumiList[index])
+                  : null;
+            }, childCount: bangumiList.isNotEmpty ? bangumiList.length : 10),
+          );
+        },
       ),
     );
   }
