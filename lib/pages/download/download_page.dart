@@ -4,6 +4,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/widget/empty_state_widget.dart';
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'package:kazumi/modules/download/download_module.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/pages/download/download_controller.dart';
@@ -57,7 +58,8 @@ class _DownloadPageState extends State<DownloadPage> {
             title: '还没有下载记录',
           );
         }
-        return ListView.builder(
+        return SmoothScroll(builder: (context, controller) => ListView.builder(
+          controller: controller,
           padding: const EdgeInsets.all(16),
           itemCount: recordKeys.length,
           itemBuilder: (context, index) {
@@ -68,7 +70,7 @@ class _DownloadPageState extends State<DownloadPage> {
               ),
             );
           },
-        );
+        ));
       }),
     );
   }

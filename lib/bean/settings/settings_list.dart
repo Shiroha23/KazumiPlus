@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:kazumi/bean/widget/content_section.dart';
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'package:kazumi/bean/widget/split_list_row.dart';
 
 enum _TileKind { plain, toggle, radio }
@@ -18,7 +19,8 @@ class SettingsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
+    return SmoothScroll(builder: (context, controller) => ListView.builder(
+      controller: controller,
       padding: const EdgeInsets.symmetric(vertical: 12),
       itemCount: sections.length,
       itemBuilder: (context, index) => Center(
@@ -27,7 +29,7 @@ class SettingsList extends StatelessWidget {
           child: sections[index],
         ),
       ),
-    );
+    ));
   }
 }
 

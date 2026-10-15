@@ -1,3 +1,4 @@
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -35,7 +36,7 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   final _input = TextEditingController();
   final _inputFocus = FocusNode();
-  final _scroll = ScrollController();
+  final _scroll = SmoothScrollController();
   // Preserve the input subtree when the header moves in or out of the scroll view.
   final _searchHeaderKey = GlobalKey();
   String? _submittedQuery;

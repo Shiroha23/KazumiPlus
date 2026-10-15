@@ -1,3 +1,4 @@
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kazumi/bean/widget/empty_state_widget.dart';
@@ -24,7 +25,7 @@ class HistoryListView extends StatefulWidget {
 class _HistoryListViewState extends State<HistoryListView> {
   final _searchController = TextEditingController();
   final _searchFocus = FocusNode();
-  final _scrollController = ScrollController();
+  final _scrollController = SmoothScrollController();
   HistorySourceFilter _source = HistorySourceFilter.all;
   String _query = '';
 

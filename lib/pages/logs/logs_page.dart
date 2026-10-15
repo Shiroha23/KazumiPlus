@@ -1,3 +1,4 @@
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -20,7 +21,7 @@ class LogsPage extends StatefulWidget {
 
 class _LogsPageState extends State<LogsPage> {
   final List<String> _logLines = [];
-  final ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController = SmoothScrollController();
 
   bool _isLoading = true;
   bool _hasError = false;

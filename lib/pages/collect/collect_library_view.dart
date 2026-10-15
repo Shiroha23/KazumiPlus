@@ -1,3 +1,4 @@
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
@@ -55,7 +56,7 @@ class _CollectLibraryViewState extends State<CollectLibraryView>
   late TabController _tabController;
   bool? _disableAnimations;
   final _scrollControllers = {
-    for (final type in _collectCategories) type: ScrollController(),
+    for (final type in _collectCategories) type: SmoothScrollController(),
   };
   PageStorageBucket _resultsStorage = PageStorageBucket();
   CollectType? _selectedType = CollectType.watching;

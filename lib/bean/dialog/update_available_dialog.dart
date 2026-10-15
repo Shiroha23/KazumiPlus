@@ -1,3 +1,4 @@
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/dialog/dialog.dart';
 import 'package:kazumi/bean/settings/settings_dropdown_tile.dart';
@@ -32,7 +33,7 @@ class UpdateAvailableDialog extends StatefulWidget {
 }
 
 class _UpdateAvailableDialogState extends State<UpdateAvailableDialog> {
-  final _notesController = ScrollController();
+  final _notesController = SmoothScrollController();
   var _source = UpdateDownloadSource.mirror;
   late var _type = widget.updateInfo.recommendedInstallationType;
   var _disableAutoUpdate = false;

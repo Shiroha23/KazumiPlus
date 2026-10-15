@@ -1,3 +1,4 @@
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -44,7 +45,7 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
   final _commentController = TextEditingController();
   final _tagController = TextEditingController();
   final _tagFocus = FocusNode();
-  final _scrollController = ScrollController();
+  final _scrollController = SmoothScrollController();
   late final int _savedScore;
   late final String _initialComment;
   late final Set<String> _initialTags;

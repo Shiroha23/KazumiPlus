@@ -61,7 +61,7 @@ class _SourceSheetView extends StatefulWidget {
 }
 
 class _SourceSheetViewState extends State<_SourceSheetView> {
-  final _scrollController = ScrollController();
+  final _scrollController = SmoothScrollController();
   final _display = <String, _SourceDisplay>{};
   final _headerKeys = <String, GlobalKey>{};
   bool _autoExpansionHandled = false;

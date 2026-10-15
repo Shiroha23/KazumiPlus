@@ -13,6 +13,7 @@ import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
 import 'package:kazumi/bean/widget/kazumi_menu.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
 import 'package:kazumi/bean/widget/empty_state_widget.dart';
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'package:kazumi/bean/widget/state_presentation.dart';
 import 'package:kazumi/pages/plugin_editor/plugin_update_actions.dart';
 import 'package:kazumi/pages/plugin_editor/rule_dialogs.dart';
@@ -34,6 +35,7 @@ class PluginViewPage extends StatefulWidget {
 class _PluginViewPageState extends State<PluginViewPage> {
   PluginsController get _controller => widget.controller;
   final _search = TextEditingController();
+  final _scroll = SmoothScrollController();
   final Set<String> _selected = {};
   final Set<String> _updatingNames = {};
   bool _selecting = false;
@@ -51,6 +53,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
   @override
   void dispose() {
     _search.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -246,6 +249,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                   final canReorder =
                       query.isEmpty && !_updatesOnly && !_selecting;
                   return ReorderableListView.builder(
+                    scrollController: _scroll,
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                     buildDefaultDragHandles: false,
                     proxyDecorator: (child, index, animation) => Material(

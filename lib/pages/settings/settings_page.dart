@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
@@ -314,7 +315,8 @@ class _SettingsMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return ScrollConfiguration(
       behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-      child: ListView(
+      child: SmoothScroll(builder: (context, controller) => ListView(
+        controller: controller,
         padding: wide
             ? const EdgeInsets.fromLTRB(4, 0, 0, 12)
             : const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -348,7 +350,7 @@ class _SettingsMenu extends StatelessWidget {
                 ),
               ),
         ],
-      ),
+      )),
     );
   }
 }

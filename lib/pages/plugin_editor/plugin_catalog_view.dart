@@ -8,6 +8,7 @@ import 'package:kazumi/bean/widget/error_widget.dart';
 import 'package:kazumi/bean/widget/kazumi_menu.dart';
 import 'package:kazumi/bean/widget/empty_state_widget.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'package:kazumi/bean/widget/state_presentation.dart';
 import 'package:kazumi/modules/plugin/plugin_http_module.dart';
 import 'package:kazumi/pages/plugin_editor/plugin_update_actions.dart';
@@ -44,6 +45,7 @@ class PluginCatalogView extends StatefulWidget {
 
 class _PluginCatalogViewState extends State<PluginCatalogView> {
   final _search = TextEditingController();
+  final _scroll = SmoothScrollController();
   final Set<String> _installing = {};
   _CatalogSort _sort = _CatalogSort.lastUpdate;
   _CatalogFilter _filter = _CatalogFilter.all;
@@ -65,6 +67,7 @@ class _PluginCatalogViewState extends State<PluginCatalogView> {
   @override
   void dispose() {
     _search.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -325,6 +328,7 @@ class _PluginCatalogViewState extends State<PluginCatalogView> {
         ];
         return widget._scrollViewBuilder?.call(context, slivers) ??
             CustomScrollView(
+              controller: _scroll,
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               slivers: slivers,
             );

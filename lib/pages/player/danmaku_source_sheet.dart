@@ -1,3 +1,4 @@
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show PointerDeviceKind;
@@ -100,7 +101,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
       TextEditingController(text: widget.initialKeyword);
   final _episodeSearchController = TextEditingController();
   final _episodeJumpController = TextEditingController();
-  final _episodeScrollController = ScrollController();
+  final _episodeScrollController = SmoothScrollController();
   late final List<String> _recentKeywords;
 
   String get _historyKey => 'danmakuSearchHistory_${widget.bangumiId}';

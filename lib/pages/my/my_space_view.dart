@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/settings/settings_list.dart';
 import 'package:kazumi/bean/widget/content_section.dart';
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'package:kazumi/bean/widget/state_presentation.dart';
 import 'package:kazumi/modules/my/watch_stats.dart';
 import 'package:material_new_shapes/material_new_shapes.dart';
@@ -36,7 +37,8 @@ class MySpaceView extends StatelessWidget {
       final width = constraints.maxWidth - inset * 2;
       final largeText = MediaQuery.textScalerOf(context).scale(16) > 24;
       final wide = width >= 840 && !largeText;
-      return SingleChildScrollView(
+      return SmoothScroll(builder: (context, controller) => SingleChildScrollView(
+        controller: controller,
         key: const PageStorageKey('my-space'),
         padding: EdgeInsets.fromLTRB(inset, 12, inset, 32),
         child: Center(
@@ -51,7 +53,7 @@ class MySpaceView extends StatelessWidget {
                   ),
           ),
         ),
-      );
+      ));
     });
   }
 }

@@ -1,3 +1,4 @@
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -875,7 +876,7 @@ class _ScreenshotFilmstrip extends StatefulWidget {
 }
 
 class _ScreenshotFilmstripState extends State<_ScreenshotFilmstrip> {
-  final ScrollController _scroll = ScrollController();
+  final ScrollController _scroll = SmoothScrollController();
   double? _target;
   bool _positioned = false;
 

@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/widget/split_list_row.dart';
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'package:kazumi/bean/widget/state_presentation.dart';
 
 void _showMessage(BuildContext context, String message) {
@@ -27,7 +28,8 @@ class AboutContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SafeArea(
         top: false,
-        child: SingleChildScrollView(
+        child: SmoothScroll(builder: (context, controller) => SingleChildScrollView(
+          controller: controller,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
           child: Center(
             child: ConstrainedBox(
@@ -38,7 +40,7 @@ class AboutContent extends StatelessWidget {
               ),
             ),
           ),
-        ),
+        )),
       );
 }
 

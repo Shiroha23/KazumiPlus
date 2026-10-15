@@ -1,3 +1,4 @@
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
@@ -26,7 +27,7 @@ class _PopularPageState extends State<PopularPage> {
   @override
   void initState() {
     super.initState();
-    scrollController = ScrollController(
+    scrollController = SmoothScrollController(
       initialScrollOffset: popularController.scrollOffset,
     );
     scrollController.addListener(scrollListener);

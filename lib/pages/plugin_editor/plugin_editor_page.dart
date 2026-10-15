@@ -1,3 +1,4 @@
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -156,7 +157,7 @@ class PluginEditorPage extends StatefulWidget {
 
 class _PluginEditorPageState extends State<PluginEditorPage> {
   PluginsController get pluginsController => widget.controller;
-  final _formScroll = ScrollController();
+  final _formScroll = SmoothScrollController();
   int _section = 0;
   bool _saving = false;
   String? _editorError;

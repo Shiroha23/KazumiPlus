@@ -1,3 +1,4 @@
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -39,7 +40,7 @@ class EpisodeSelectionPanel extends StatefulWidget {
 }
 
 class EpisodeSelectionPanelState extends State<EpisodeSelectionPanel> {
-  final _scrollController = ScrollController();
+  final _scrollController = SmoothScrollController();
   late final _observerController =
       ListObserverController(controller: _scrollController)
         ..cacheJumpIndexOffset = false;

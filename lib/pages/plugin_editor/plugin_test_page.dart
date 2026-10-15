@@ -1,3 +1,4 @@
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
@@ -31,9 +32,9 @@ class PluginTestPage extends StatefulWidget {
 class _PluginTestPageState extends State<PluginTestPage> {
   late final Plugin plugin;
   final testKeywordController = TextEditingController();
-  final searchRawScrollController = ScrollController();
-  final chapterScrollController = ScrollController();
-  final fragmentScrollController = ScrollController();
+  final searchRawScrollController = SmoothScrollController();
+  final chapterScrollController = SmoothScrollController();
+  final fragmentScrollController = SmoothScrollController();
 
   String searchRaw = "";
   String chapterRaw = "";

@@ -1,3 +1,4 @@
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -71,7 +72,7 @@ class _VideoDetailsSheetState extends State<_VideoDetailsSheet>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController =
       TabController(length: 2, vsync: this);
-  final ScrollController _logScrollController = ScrollController();
+  final ScrollController _logScrollController = SmoothScrollController();
   bool _logInitialScrollDone = false;
   int _lastLogCount = 0;
 

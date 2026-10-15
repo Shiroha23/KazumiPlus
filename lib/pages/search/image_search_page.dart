@@ -1,3 +1,4 @@
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -33,9 +34,9 @@ class ImageSearchPage extends StatefulWidget {
 class _ImageSearchPageState extends State<ImageSearchPage> {
   final _urlController = TextEditingController();
   final _urlFocus = FocusNode();
-  final _pageScroll = ScrollController();
-  final _sourceScroll = ScrollController();
-  final _resultScroll = ScrollController();
+  final _pageScroll = SmoothScrollController();
+  final _sourceScroll = SmoothScrollController();
+  final _resultScroll = SmoothScrollController();
   final _resultsKey = GlobalKey();
   final _picker = ImagePicker();
   Timer? _previewDebounce;
