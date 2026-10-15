@@ -119,11 +119,12 @@ class _PopularPageState extends State<PopularPage> {
                           ),
                         );
                       }
-                      return contentGrid(
-                        (popularController.currentTag == '')
-                            ? popularController.trendList
-                            : popularController.bangumiList,
-                      );
+                      // Read the list contents inside Observer so async updates
+                      // rebuild the grid, whose layout/children are built later.
+                      final items = popularController.currentTag.isEmpty
+                          ? popularController.trendList
+                          : popularController.bangumiList;
+                      return contentGrid(items.toList(growable: false));
                     },
                   ),
                 ),
@@ -184,10 +185,8 @@ class _PopularPageState extends State<PopularPage> {
             ),
             delegate:
                 SliverChildBuilderDelegate((BuildContext context, int index) {
-              return bangumiList.isNotEmpty
-                  ? BangumiCardV(bangumiItem: bangumiList[index])
-                  : null;
-            }, childCount: bangumiList.isNotEmpty ? bangumiList.length : 10),
+              return BangumiCardV(bangumiItem: bangumiList[index]);
+            }, childCount: bangumiList.length),
           );
         },
       ),

@@ -94,11 +94,12 @@ void main() async {
       windowButtonVisibility: showWindowButton,
       title: 'Kazumi',
     );
-    windowManager.waitUntilReadyToShow(windowOptions, () async {
-      // window_manager controls desktop visibility to avoid startup flicker.
-      await windowManager.show();
-      await windowManager.focus();
-    });
+    // Finish native frame setup before runApp can sync the saved material.
+    // setTitleBarStyle resets DWM's glass margins, so running it concurrently
+    // with the first theme sync can erase an already applied window effect.
+    await windowManager.waitUntilReadyToShow(windowOptions);
+    await windowManager.show();
+    await windowManager.focus();
   }
   if (Platform.isWindows) {
     SystemProxyService.init();
