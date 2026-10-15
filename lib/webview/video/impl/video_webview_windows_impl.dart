@@ -13,6 +13,11 @@ class VideoWebviewWindowsImpl
   HeadlessWebview? headlessWebview;
 
   @override
+  Future<void> setUserAgent(String? userAgent) async {
+    await headlessWebview?.setUserAgent(userAgent ?? '');
+  }
+
+  @override
   Future<void> init() async {
     await _setupProxy();
     headlessWebview ??= HeadlessWebview();

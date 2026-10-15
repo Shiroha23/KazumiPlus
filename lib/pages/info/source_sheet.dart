@@ -23,6 +23,7 @@ import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/plugin/captcha_verification_service.dart';
 import 'package:kazumi/services/plugin/plugin_search_service.dart';
+import 'package:kazumi/pages/plugin_editor/website_login_page.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart'
     show RuleCancelToken;
 import 'package:kazumi/utils/device.dart';
@@ -86,6 +87,12 @@ class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
   }
 
   void _retry(String name) => _querySource(_keywordFor(name), name);
+
+  Future<void> _login(String name) async {
+    if (await showWebsiteLogin(context, _pluginFor(name)) && mounted) {
+      _retry(name);
+    }
+  }
 
   void _showVerifiedResult(Plugin plugin, String pageHtml) {
     if (!mounted) return;
@@ -208,6 +215,7 @@ class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
             onSourceSearch: _showCustomKeyword,
             onSourceAliasSearch: _showAliasPicker,
             onRetry: _retry,
+            onLogin: _login,
             onVerify: (name) =>
                 _captchaFlow.start(_pluginFor(name), _keywordFor(name)),
             onOpenBrowser: _openInBrowser,

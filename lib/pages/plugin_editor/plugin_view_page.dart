@@ -21,6 +21,7 @@ import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/plugin/plugin_import_parser.dart';
+import 'package:kazumi/pages/plugin_editor/website_login_page.dart';
 
 class PluginViewPage extends StatefulWidget {
   const PluginViewPage({super.key, required this.controller});
@@ -452,6 +453,9 @@ class _PluginViewPageState extends State<PluginViewPage> {
             onPressed: toggle,
             icon: const Icon(Icons.more_horiz_rounded)),
         menuChildren: [
+          KazumiMenuItem(
+              onPressed: () => showWebsiteLogin(context, plugin),
+              label: '网站登录'),
           KazumiMenuItem(
               onPressed: () => context.pushNamed('/settings/plugin/editor',
                   arguments: plugin),

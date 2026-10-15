@@ -22,6 +22,8 @@ import 'package:kazumi/services/platform/desktop_window_config.dart';
 import 'package:kazumi/services/platform/webview_feature_service.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/navigation.dart';
+import 'package:kazumi/services/plugin/plugin_cookie_manager.dart';
+import 'package:kazumi/webview/login/website_browser.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -70,6 +72,8 @@ void main() async {
     return;
   }
   await DownloadDirectoryService().restoreAccess();
+  PluginCookieManager.instance.browserCookieReader = WebsiteBrowser.cookiesFor;
+  await PluginCookieManager.instance.init(await getApplicationSupportDirectory());
   final showWindowButton = DesktopWindowConfig.showWindowButton;
   if (isDesktop()) {
     await windowManager.ensureInitialized();

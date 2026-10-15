@@ -88,6 +88,7 @@ abstract class IVideoSourceService {
   Future<VideoSource> resolve(
     String episodeUrl, {
     required bool useLegacyParser,
+    String? userAgent,
     int offset = 0,
     Duration timeout = const Duration(seconds: 30),
   });

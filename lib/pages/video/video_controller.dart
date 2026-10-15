@@ -20,7 +20,7 @@ import 'package:kazumi/modules/comments/comment_response.dart';
 import 'package:kazumi/request/apis/bangumi_api.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/utils/episode_url.dart';
-import 'package:kazumi/utils/http_headers.dart';
+import 'package:kazumi/services/plugin/plugin_cookie_manager.dart';
 import 'package:kazumi/utils/media.dart';
 import 'package:kazumi/utils/async_session.dart';
 import 'package:kazumi/services/platform/display_mode_service.dart';
@@ -606,9 +606,13 @@ abstract class _VideoPageController with Store implements Disposable {
       final source = await _videoSourceService!.resolve(
         url,
         useLegacyParser: currentPlugin.useLegacyParser,
+        userAgent: PluginCookieManager.instance.userAgentFor(currentPlugin.name),
         offset: offset,
       );
 
+      if (session.isStale) return;
+      final httpHeaders = await PluginCookieManager.instance.headersFor(
+          currentPlugin.name, source.url, currentPlugin.buildHttpHeaders());
       if (session.isStale) {
         return;
       }
@@ -630,13 +634,7 @@ abstract class _VideoPageController with Store implements Disposable {
         danmakuEpisodeNumber: resolvedEpisode.danmakuEpisodeNumber,
         pageUrl: resolvedEpisode.pageUrl,
         sortNumber: resolvedEpisode.sortNumber,
-        httpHeaders: {
-          'user-agent': currentPlugin.userAgent.isEmpty
-              ? getRandomUA()
-              : currentPlugin.userAgent,
-          if (currentPlugin.referer.isNotEmpty)
-            'referer': currentPlugin.referer,
-        },
+        httpHeaders: httpHeaders,
         adBlockerEnabled: forceAdBlocker || currentPlugin.adBlocker,
         episodeTitle: resolvedEpisode.displayTitle,
         referer: currentPlugin.referer,

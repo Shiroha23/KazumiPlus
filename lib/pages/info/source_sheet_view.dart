@@ -37,6 +37,7 @@ class _SourceSheetView extends StatefulWidget {
     required this.onSourceSearch,
     required this.onSourceAliasSearch,
     required this.onRetry,
+    required this.onLogin,
     required this.onVerify,
     required this.onOpenBrowser,
     required this.onPlay,
@@ -49,6 +50,7 @@ class _SourceSheetView extends StatefulWidget {
   final ValueChanged<String> onSourceSearch;
   final ValueChanged<String> onSourceAliasSearch;
   final ValueChanged<String> onRetry;
+  final ValueChanged<String> onLogin;
   final ValueChanged<String> onVerify;
   final ValueChanged<String> onOpenBrowser;
   final void Function(String sourceName, SearchItem result) onPlay;
@@ -357,6 +359,10 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
             onPressed: toggle,
           ),
           menuChildren: [
+            KazumiMenuItem(
+              label: '网站登录',
+              onPressed: () => widget.onLogin(group.name),
+            ),
             KazumiMenuItem(
               label: '修改此来源的检索词',
               onPressed: () => widget.onSourceSearch(group.name),

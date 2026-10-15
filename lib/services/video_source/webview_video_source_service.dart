@@ -25,6 +25,7 @@ class WebViewVideoSourceService implements IVideoSourceService {
   Future<VideoSource> resolve(
     String episodeUrl, {
     required bool useLegacyParser,
+    String? userAgent,
     int offset = 0,
     Duration timeout = const Duration(seconds: 15),
   }) async {
@@ -42,6 +43,7 @@ class WebViewVideoSourceService implements IVideoSourceService {
         request,
         episodeUrl,
         useLegacyParser: useLegacyParser,
+        userAgent: userAgent,
         offset: offset,
         timeout: timeout,
       ),
@@ -55,6 +57,7 @@ class WebViewVideoSourceService implements IVideoSourceService {
     _ResolveRequest request,
     String episodeUrl, {
     required bool useLegacyParser,
+    String? userAgent,
     required int offset,
     required Duration timeout,
   }) async {
@@ -73,6 +76,8 @@ class WebViewVideoSourceService implements IVideoSourceService {
 
     var didStartLoad = false;
     try {
+      request.throwIfNotCurrent(_activeRequest);
+      await _webview!.setUserAgent(userAgent);
       request.throwIfNotCurrent(_activeRequest);
       didStartLoad = true;
       await _webview!.loadUrl(

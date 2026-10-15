@@ -18,6 +18,15 @@ class VideoWebviewImpl
   Timer? videoParserTimer;
 
   @override
+  Future<void> setUserAgent(String? userAgent) async {
+    final controller = webviewController;
+    final settings = await controller?.getSettings();
+    if (controller == null || settings == null) return;
+    settings.userAgent = userAgent ?? getRandomUA();
+    await controller.setSettings(settings: settings);
+  }
+
+  @override
   Future<void> init() async {
     await _setupProxy();
     headlessWebView ??= PlatformHeadlessInAppWebView(

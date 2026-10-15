@@ -30,6 +30,9 @@ abstract class VideoWebviewController<T> {
   /// WebView initialization method.
   Future<void> init();
 
+  /// Align parser requests with the browser session that issued login cookies.
+  Future<void> setUserAgent(String? userAgent) async {}
+
   final StreamController<bool> initEventController =
       StreamController<bool>.broadcast();
 

@@ -264,11 +264,6 @@ if (!_checkForCaptcha()) {
     buttonWasClicked = false;
     _registerHandlers();
     await _addCaptchaUserScript();
-    try {
-      await PlatformCookieManager(const PlatformCookieManagerCreationParams())
-          .deleteAllCookies();
-      logEventController.add('[Captcha WebView] Cookies cleared before load');
-    } catch (_) {}
     await webviewController?.loadUrl(urlRequest: URLRequest(url: WebUri(url)));
   }
 
@@ -280,11 +275,6 @@ if (!_checkForCaptcha()) {
     buttonWasClicked = false;
     _registerHandlers();
     await _addButtonClickUserScript(buttonXpath);
-    try {
-      await PlatformCookieManager(const PlatformCookieManagerCreationParams())
-          .deleteAllCookies();
-      logEventController.add('[Captcha WebView] Cookies cleared before load');
-    } catch (_) {}
     await webviewController?.loadUrl(urlRequest: URLRequest(url: WebUri(url)));
   }
 
@@ -296,11 +286,6 @@ if (!_checkForCaptcha()) {
     buttonWasClicked = false;
     _registerHandlers();
     await _addCustomScriptUserScript(script);
-    try {
-      await PlatformCookieManager(const PlatformCookieManagerCreationParams())
-          .deleteAllCookies();
-      logEventController.add('[Captcha WebView] Cookies cleared before load');
-    } catch (_) {}
     await webviewController?.loadUrl(urlRequest: URLRequest(url: WebUri(url)));
   }
 
@@ -515,10 +500,6 @@ if (!_checkAndClick()) {
     captchaWasFound = false;
     buttonWasClicked = false;
     _handlersRegistered = false;
-    try {
-      PlatformCookieManager(const PlatformCookieManagerCreationParams())
-          .deleteAllCookies();
-    } catch (_) {}
     try {
       captchaImageFoundController.close();
       captchaDisappearedController.close();

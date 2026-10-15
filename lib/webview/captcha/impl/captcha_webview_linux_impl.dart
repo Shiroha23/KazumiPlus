@@ -411,7 +411,6 @@ $script
       final cookies = await webviewController?.getAllCookies() ?? [];
       final cookieString =
           cookies.map((c) => '${c.name}=${c.value}').join('; ');
-      logEventController.add('[Captcha WebView] Cookies: $cookieString');
       return cookieString;
     } catch (e) {
       KazumiLogger().e('[Captcha WebView] getCookieString error: $e');

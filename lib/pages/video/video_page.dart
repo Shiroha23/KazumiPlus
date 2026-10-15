@@ -30,6 +30,7 @@ import 'package:kazumi/services/player/pip_utils.dart';
 import 'package:kazumi/services/player/timed_shutdown_service.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/utils/device.dart';
+import 'package:kazumi/pages/plugin_editor/website_login_page.dart';
 
 class VideoPage extends StatefulWidget {
   const VideoPage({
@@ -260,6 +261,16 @@ class _VideoPageState extends State<VideoPage>
         playerController: playerController);
   }
 
+  Future<void> _loginAndRetry() async {
+    if (await showWebsiteLogin(context, videoPageController.currentPlugin) &&
+        mounted) {
+      final selection = videoPageController.selectedEpisode;
+      await changeEpisode(selection.episode,
+          currentRoad: selection.road,
+          offset: playerController.playback.currentPosition.inSeconds);
+    }
+  }
+
   void _revealCurrentEpisode() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _episodePanelKey.currentState?.revealCurrentEpisode();
@@ -365,6 +376,14 @@ class _VideoPageState extends State<VideoPage>
                         title: '暂时无法播放',
                         errMsg: errorMessage,
                         icon: Icons.videocam_off_outlined,
+                        actions: [
+                          if (!videoPageController.isOfflineMode)
+                            FilledButton.icon(
+                              onPressed: _loginAndRetry,
+                              icon: const Icon(Icons.login_rounded),
+                              label: const Text('网站登录'),
+                            ),
+                        ],
                       );
                     }
                     return Center(

@@ -110,6 +110,7 @@ class VideoSourceResolverLease {
   Future<VideoSource> resolve(
     String episodeUrl, {
     required bool useLegacyParser,
+    String? userAgent,
     int offset = 0,
     Duration timeout = const Duration(seconds: 30),
   }) async {
@@ -119,6 +120,7 @@ class VideoSourceResolverLease {
     return _worker.resolve(
       episodeUrl,
       useLegacyParser: useLegacyParser,
+      userAgent: userAgent,
       offset: offset,
       timeout: timeout,
     );
@@ -145,12 +147,14 @@ class _VideoSourceResolverWorker {
   Future<VideoSource> resolve(
     String episodeUrl, {
     required bool useLegacyParser,
+    String? userAgent,
     int offset = 0,
     Duration timeout = const Duration(seconds: 30),
   }) {
     return _service.resolve(
       episodeUrl,
       useLegacyParser: useLegacyParser,
+      userAgent: userAgent,
       offset: offset,
       timeout: timeout,
     );

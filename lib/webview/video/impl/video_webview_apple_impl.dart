@@ -12,6 +12,15 @@ class VideoWebviewAppleImpl
   bool hasInjectedScripts = false;
 
   @override
+  Future<void> setUserAgent(String? userAgent) async {
+    final controller = webviewController;
+    final settings = await controller?.getSettings();
+    if (controller == null || settings == null) return;
+    settings.userAgent = userAgent ?? getRandomUA();
+    await controller.setSettings(settings: settings);
+  }
+
+  @override
   Future<void> init() async {
     headlessWebView ??= PlatformHeadlessInAppWebView(
       PlatformHeadlessInAppWebViewCreationParams(
@@ -37,7 +46,9 @@ class VideoWebviewAppleImpl
           userAgent: getRandomUA(),
           mediaPlaybackRequiresUserGesture: true,
           useOnLoadResource: false,
-          cacheEnabled: false,
+          // Use WKWebView's persistent store shared with website login.
+          cacheEnabled: true,
+          sharedCookiesEnabled: true,
           isInspectable: false,
           contentBlockers: [
             ContentBlocker(

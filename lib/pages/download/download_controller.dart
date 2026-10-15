@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:kazumi/services/plugin/plugin_cookie_manager.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:kazumi/modules/download/download_module.dart';
@@ -579,6 +580,7 @@ abstract class _DownloadController with Store {
         final source = await lease.resolve(
           fullUrl,
           useLegacyParser: plugin.useLegacyParser,
+          userAgent: PluginCookieManager.instance.userAgentFor(plugin.name),
           timeout: const Duration(seconds: 30),
         );
         m3u8Url = source.url;
