@@ -10,6 +10,7 @@ import 'package:kazumi/bean/widget/bangumi_mirror_error_widget.dart';
 import 'package:kazumi/bean/widget/content_section.dart';
 import 'package:kazumi/bean/widget/empty_state_widget.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
+import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'package:kazumi/bean/widget/state_presentation.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/pages/timeline/timeline_controller.dart';
@@ -63,34 +64,37 @@ class _TimelinePageState extends State<TimelinePage> {
             onClose: () => Navigator.of(context).pop(),
           ),
           Expanded(
-            child: ListView.separated(
-              padding: materialBottomSheetContentPadding,
-              itemCount: years.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 24),
-              itemBuilder: (context, index) {
-                final year = years[index];
-                return ContentSection(
-                  title: '$year',
-                  padding: const EdgeInsets.all(8),
-                  child: LayoutBuilder(builder: (context, constraints) {
-                    final columns =
-                        MediaQuery.textScalerOf(context).scale(14) > 21 ? 2 : 4;
-                    return Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: [
-                        for (final month in [1, 4, 7, 10])
-                          SizedBox(
-                            width: (constraints.maxWidth - 4 * (columns - 1)) /
-                                columns,
-                            child: _seasonButton(
-                                context, DateTime(year, month), now),
-                          ),
-                      ],
-                    );
-                  }),
-                );
-              },
+            child: SmoothScroll(
+              builder: (context, controller) => ListView.separated(
+                controller: controller,
+                padding: materialBottomSheetContentPadding,
+                itemCount: years.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 24),
+                itemBuilder: (context, index) {
+                  final year = years[index];
+                  return ContentSection(
+                    title: '$year',
+                    padding: const EdgeInsets.all(8),
+                    child: LayoutBuilder(builder: (context, constraints) {
+                      final columns =
+                          MediaQuery.textScalerOf(context).scale(14) > 21 ? 2 : 4;
+                      return Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: [
+                          for (final month in [1, 4, 7, 10])
+                            SizedBox(
+                              width: (constraints.maxWidth - 4 * (columns - 1)) /
+                                  columns,
+                              child: _seasonButton(
+                                  context, DateTime(year, month), now),
+                            ),
+                        ],
+                      );
+                    }),
+                  );
+                },
+              ),
             ),
           ),
         ],
@@ -165,7 +169,6 @@ class _TimelinePageState extends State<TimelinePage> {
             ? null
             : _buildSeasonHeader(context,
                 loading: loading, compact: constraints.maxHeight < 500);
-        final weekHeight = _TimelineWeekSelector.heightFor(scaler) + 16;
         final weekSelector = Padding(
           padding: EdgeInsets.fromLTRB(inset, 0, inset, 16),
           child: _TimelineWeekSelector(
@@ -199,96 +202,69 @@ class _TimelinePageState extends State<TimelinePage> {
           ),
           body: SafeArea(
             top: false,
-            child: LayoutBuilder(
-                builder: (context, viewport) => NestedScrollView(
-                      // Keep the outer viewport clamped and unstretched so tabs stay fixed.
-                      physics: const ClampingScrollPhysics(),
-                      scrollBehavior: ScrollConfiguration.of(context).copyWith(
-                        overscroll: false,
-                        scrollbars: false,
-                      ),
-                      headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                        if (seasonHeader != null)
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: EdgeInsets.fromLTRB(inset, 8, inset, 20),
-                              child: seasonHeader,
-                            ),
-                          ),
-                        SliverOverlapAbsorber(
-                          handle:
-                              NestedScrollView.sliverOverlapAbsorberHandleFor(
-                                  context),
-                          sliver: SliverPersistentHeader(
-                            pinned: true,
-                            delegate: _WeekHeaderDelegate(
-                              height: weekHeight,
-                              color: theme.scaffoldBackgroundColor,
-                              child: weekSelector,
-                            ),
-                          ),
-                        ),
-                      ],
-                      body: loading && calendar.every((day) => day.isEmpty)
-                          ? _buildLoading(viewport.maxHeight, weekHeight)
-                          : failed
-                              ? _TimelineScrollView(
-                                  slivers: [
-                                    SliverPadding(
-                                      padding: const EdgeInsets.all(24),
-                                      sliver: SliverToBoxAdapter(
-                                        child: BangumiMirrorErrorWidget(
-                                          onRetry: () => _controller.loadSeason(
-                                              _controller.selectedDate),
-                                          onSettingsReturned: () {
-                                            if (mounted) setState(() {});
-                                          },
-                                        ),
-                                      ),
+            child: Column(
+              children: [
+                if (seasonHeader != null)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(inset, 8, inset, 20),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: seasonHeader,
+                    ),
+                  ),
+                weekSelector,
+                Expanded(
+                  child: loading && calendar.every((day) => day.isEmpty)
+                      ? _buildLoading()
+                      : failed
+                          ? _TimelineScrollView(
+                              slivers: [
+                                SliverPadding(
+                                  padding: const EdgeInsets.all(24),
+                                  sliver: SliverToBoxAdapter(
+                                    child: BangumiMirrorErrorWidget(
+                                      onRetry: () => _controller.loadSeason(
+                                          _controller.selectedDate),
+                                      onSettingsReturned: () {
+                                        if (mounted) setState(() {});
+                                      },
                                     ),
-                                  ],
-                                )
-                              : TabBarView(
-                                  children: [
-                                    for (var day = 0; day < 7; day++)
-                                      _buildDay(
-                                        context,
-                                        day: day,
-                                        items: calendar[day],
-                                        watchingIds: watchingIds,
-                                        columns: columns,
-                                        inset: inset,
-                                        compact: narrowPortrait,
-                                      ),
-                                  ],
+                                  ),
                                 ),
-                    )),
+                              ],
+                            )
+                          : TabBarView(
+                              children: [
+                                for (var day = 0; day < 7; day++)
+                                  _buildDay(
+                                    context,
+                                    day: day,
+                                    items: calendar[day],
+                                    watchingIds: watchingIds,
+                                    columns: columns,
+                                    inset: inset,
+                                    compact: narrowPortrait,
+                                  ),
+                              ],
+                            ),
+                ),
+              ],
+            ),
           ),
         );
       });
     });
   }
 
-  Widget _buildLoading(double viewportHeight, double overlapHeight) {
-    return LayoutBuilder(builder: (context, constraints) {
-      // Center loading in the full viewport, including the scroll headers.
-      final contentHeight =
-          (constraints.maxHeight - overlapHeight).clamp(0.0, double.infinity);
-      final headerHeight = viewportHeight - contentHeight;
-      final bottomInset = headerHeight.clamp(
-          0.0, (contentHeight - 48).clamp(0.0, double.infinity));
-      return _TimelineScrollView(
-        slivers: [
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: Padding(
-              padding: EdgeInsets.only(bottom: bottomInset),
-              child: const Center(child: LoadingIndicator()),
-            ),
-          ),
-        ],
-      );
-    });
+  Widget _buildLoading() {
+    return const _TimelineScrollView(
+      slivers: [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: LoadingIndicator()),
+        ),
+      ],
+    );
   }
 
   Widget _buildSeasonPicker(BuildContext context,
@@ -438,42 +414,14 @@ class _TimelineScrollView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverOverlapInjector(
-          handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+    return SmoothScroll(
+      builder: (context, controller) => CustomScrollView(
+        controller: controller,
+        scrollBehavior: ScrollConfiguration.of(context).copyWith(
+          scrollbars: false,
         ),
-        ...slivers,
-      ],
+        slivers: slivers,
+      ),
     );
   }
-}
-
-class _WeekHeaderDelegate extends SliverPersistentHeaderDelegate {
-  const _WeekHeaderDelegate({
-    required this.height,
-    required this.color,
-    required this.child,
-  });
-
-  final double height;
-  final Color color;
-  final Widget child;
-
-  @override
-  double get minExtent => height;
-
-  @override
-  double get maxExtent => height;
-
-  @override
-  Widget build(
-          BuildContext context, double shrinkOffset, bool overlapsContent) =>
-      ColoredBox(color: color, child: child);
-
-  @override
-  bool shouldRebuild(covariant _WeekHeaderDelegate oldDelegate) =>
-      oldDelegate.height != height ||
-      oldDelegate.color != color ||
-      oldDelegate.child != child;
 }
