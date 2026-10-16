@@ -64,6 +64,12 @@ const List<_SettingsGroup> _settingsGroups = [
         path: '/settings/plugin',
       ),
       _SettingsCategory(
+        label: '登录管理',
+        description: '网站账号与共享登录状态',
+        icon: Icons.manage_accounts_rounded,
+        path: '/settings/website-login',
+      ),
+      _SettingsCategory(
         label: '下载设置',
         description: '并发数与弹幕缓存',
         icon: Icons.downloading_rounded,

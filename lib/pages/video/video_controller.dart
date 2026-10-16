@@ -618,7 +618,8 @@ abstract class _VideoPageController with Store implements Disposable {
       final source = await _videoSourceService!.resolve(
         url,
         useLegacyParser: currentPlugin.useLegacyParser,
-        userAgent: PluginCookieManager.instance.userAgentFor(currentPlugin.name),
+        userAgent: PluginCookieManager.instance.userAgentFor(
+            currentPlugin.name, url: url),
         playbackConfig: currentPlugin.playbackConfig,
         pluginName: currentPlugin.name,
         httpHeaders: currentPlugin.buildHttpHeaders(),

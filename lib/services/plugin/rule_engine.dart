@@ -302,7 +302,8 @@ class _DefaultRuleRequestExecutor implements RuleRequestExecutor {
         ? await _cookieHeaderFor(config.pluginName, request.url)
         : '';
     final verifiedUserAgent = cookieHeader.isNotEmpty
-        ? PluginCookieManager.instance.userAgentFor(config.pluginName)
+        ? PluginCookieManager.instance.userAgentFor(
+            config.pluginName, url: request.url)
         : null;
     // Header names are lowercased so a rule-supplied 'User-Agent' collides
     // with ours instead of being sent as a second, conflicting header.

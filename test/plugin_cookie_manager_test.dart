@@ -6,7 +6,7 @@ import 'package:kazumi/services/plugin/plugin_cookie_manager.dart';
 
 void main() {
   test(
-    'reads current browser cookies for the requested URL, including logout',
+    'new and renamed rules share live website cookies and browser UA',
     () async {
       var browserCookies = 'session=secret; token=a=b';
       final requested = <Uri>[];
@@ -16,32 +16,27 @@ void main() {
           return browserCookies;
         },
       );
-      await manager.saveFromWebView(
-        'site',
-        'https://www.cycani.org/',
-        'old=stale',
-      );
-      await manager.saveLoginSession(
-        'site',
-        'https://www.cycani.org/',
-        'browser-ua',
-      );
-      final headers = await manager.headersFor(
-        'site',
-        'https://www.cycani.org/play/1',
-        {'user-agent': 'rule-ua', 'referer': 'https://www.cycani.org/'},
-      );
-      expect(headers['cookie'], 'session=secret; token=a=b');
-      expect(headers['user-agent'], 'browser-ua');
-      expect(headers['referer'], 'https://www.cycani.org/');
-      expect(requested.single.path, '/play/1');
+      await manager.saveLoginSession('https://www.example.org/', 'browser-ua');
+      for (final name in ['old rule', 'new rule', 'renamed rule']) {
+        final headers = await manager.headersFor(
+          name,
+          'https://api.example.org/play/1',
+          {'user-agent': 'rule-ua'},
+        );
+        expect(headers['cookie'], 'session=secret; token=a=b');
+        expect(headers['user-agent'], 'browser-ua');
+      }
+      expect(requested.every((uri) => uri.host == 'api.example.org'), isTrue);
+      expect(requested.every((uri) => uri.path == '/play/1'), isTrue);
       browserCookies = '';
-      expect(await manager.loadForRequest('site', requested.single), isEmpty);
+      for (final name in ['old rule', 'new rule']) {
+        expect(await manager.loadForRequest(name, requested.first), isEmpty);
+      }
     },
   );
 
   test(
-    'does not send another rule or another website the login cookies',
+    'never reads login cookies or browser UA for unrelated targets',
     () async {
       var reads = 0;
       final manager = PluginCookieManager(
@@ -50,28 +45,61 @@ void main() {
           return 'session=private';
         },
       );
-      await manager.saveLoginSession('site', 'https://www.cycani.org/', 'ua');
+      await manager.saveLoginSession('https://www.example.org/', 'browser-ua');
       for (final url in [
-        'https://www.cycani.org.evil.test/',
-        'https://other-cycani.org/',
-        'https://cdn.example.org/video.mp4',
+        'https://www.example.org.evil.test/',
+        'https://other-example.org/',
+        'https://another.org/',
+        'https://cdn.example.net/video.mp4',
         'file:///etc/passwd',
+        'https://name:secret@example.org/',
       ]) {
-        expect(await manager.loadForRequest('site', Uri.parse(url)), isEmpty);
+        final headers = await manager.headersFor('new rule', url, {});
+        expect(headers.containsKey('cookie'), isFalse, reason: url);
+        expect(headers.containsKey('user-agent'), isFalse, reason: url);
       }
-      expect(
-        await manager.loadForRequest(
-          'other rule',
-          Uri.parse('https://www.cycani.org/'),
-        ),
-        isEmpty,
-      );
       expect(reads, 0);
     },
   );
 
   test(
-    'restores site registration without persisting authentication secrets',
+    'browser reads use each exact target URL and do not copy cookies',
+    () async {
+      final manager = PluginCookieManager(
+        browserCookieReader: (uri) async {
+          return uri.host == 'api.example.org' ? 'api=only' : 'web=only';
+        },
+      );
+      await manager.saveLoginSession('https://example.org/', 'ua');
+      expect(
+        (await manager.headersFor(
+          'new',
+          'https://api.example.org/a',
+          {},
+        ))['cookie'],
+        'api=only',
+      );
+      expect(
+        (await manager.headersFor(
+          'new',
+          'https://www.example.org/b',
+          {},
+        ))['cookie'],
+        'web=only',
+      );
+      expect(
+        (await manager.headersFor(
+          'new',
+          'https://example.net/v.mp4',
+          {},
+        ))['cookie'],
+        isNull,
+      );
+    },
+  );
+
+  test(
+    'persists websites without rule names, URL tokens or auth cookies',
     () async {
       final directory = await Directory.systemTemp.createTemp(
         'kazumi-sessions-',
@@ -80,30 +108,118 @@ void main() {
       final manager = PluginCookieManager();
       await manager.init(directory);
       await manager.saveLoginSession(
-        'site',
-        'https://www.cycani.org/',
+        'https://www.example.org/account?token=sensitive#private',
         'browser-ua',
       );
       final file = File('${directory.path}/website_sessions.json');
-      final data = jsonDecode(await file.readAsString());
-      expect(data, {
-        'site': {'site': 'https://www.cycani.org/', 'userAgent': 'browser-ua'},
+      expect(jsonDecode(await file.readAsString()), {
+        'version': 2,
+        'sites': [
+          {'site': 'https://www.example.org/', 'userAgent': 'browser-ua'},
+        ],
       });
       final restored = PluginCookieManager(
         browserCookieReader: (_) async => 'session=from-native-store',
       );
       await restored.init(directory);
-      expect(restored.userAgentFor('site'), 'browser-ua');
-      final cookies = await restored.loadForRequest(
-        'site',
-        Uri.parse('https://www.cycani.org/'),
+      expect(
+        restored.userAgentFor('new rule', url: 'https://example.org/'),
+        'browser-ua',
       );
-      expect(cookies.single.value, 'from-native-store');
+      expect(
+        (await restored.loadForRequest(
+          'new rule',
+          Uri.parse('https://www.example.org/'),
+        )).single.value,
+        'from-native-store',
+      );
     },
   );
 
   test(
-    'keeps captcha cookies available for rules without saved login',
+    'migrates and deduplicates legacy registrations including removed rules',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'kazumi-migration-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final file = File('${directory.path}/website_sessions.json');
+      await file.writeAsString(
+        jsonEncode({
+          'deleted old rule': {
+            'site': 'https://www.example.org/',
+            'userAgent': 'ua',
+          },
+          'second rule': {'site': 'https://example.org/path', 'userAgent': ''},
+          'other rule': {'site': 'https://other.org/', 'userAgent': 'other-ua'},
+          'invalid': {'site': 'file:///tmp/website'},
+          'malformed': 'skip',
+        }),
+      );
+      final manager = PluginCookieManager(
+        browserCookieReader: (_) async => 'session=existing-browser-session',
+      );
+      await manager.init(directory);
+      expect(manager.savedSites.map((site) => site.host), [
+        'example.org',
+        'other.org',
+      ]);
+      expect(
+        manager.userAgentFor('brand new', url: 'https://api.example.org'),
+        'ua',
+      );
+      expect(
+        (await manager.loadForRequest(
+          'brand new',
+          Uri.parse('https://api.example.org/play'),
+        )).single.value,
+        'existing-browser-session',
+      );
+      final data = jsonDecode(await file.readAsString()) as Map;
+      expect(data['version'], 2);
+      expect(data.containsKey('deleted old rule'), isFalse);
+      expect((data['sites'] as List).length, 2);
+    },
+  );
+
+  test(
+    'www and root registrations deduplicate and keep latest browser UA',
+    () async {
+      final manager = PluginCookieManager();
+      await manager.saveLoginSession('https://WWW.example.org/', 'first');
+      await manager.saveLoginSession('https://example.org/', 'second');
+      expect(manager.savedSites, hasLength(1));
+      expect(
+        manager.userAgentFor('new', url: 'https://www.example.org'),
+        'second',
+      );
+    },
+  );
+
+  test(
+    'prefers specific site and does not guess shared parent domains',
+    () async {
+      final manager = PluginCookieManager();
+      await manager.saveLoginSession('https://example.org', 'root');
+      await manager.saveLoginSession('https://member.example.org', 'member');
+      await manager.saveLoginSession('https://alice.github.io', 'alice');
+      await manager.saveLoginSession('https://alice.co.uk', 'alice-uk');
+      expect(
+        manager.userAgentFor('new', url: 'https://api.member.example.org'),
+        'member',
+      );
+      expect(
+        manager.userAgentFor('new', url: 'https://api.example.org'),
+        'root',
+      );
+      expect(manager.sessionFor(Uri.parse('https://bob.github.io')), isNull);
+      expect(manager.sessionFor(Uri.parse('https://bob.co.uk')), isNull);
+      expect(manager.sessionFor(Uri.parse('https://api.github.io')), isNull);
+    },
+  );
+
+  test(
+    'captcha snapshots remain scoped to the original rule and target site',
     () async {
       final manager = PluginCookieManager();
       await manager.saveFromWebView(
@@ -121,19 +237,78 @@ void main() {
       expect(headers['user-agent'], 'captcha-ua');
       expect(
         await manager.loadForRequest(
-          'captcha',
-          Uri.parse('https://elsewhere.org/'),
+          'new rule',
+          Uri.parse('https://example.org'),
         ),
+        isEmpty,
+      );
+      expect(
+        await manager.headersFor('captcha', 'https://elsewhere.org', {}),
         isEmpty,
       );
     },
   );
 
-  test('rejects non-web login URLs', () async {
+  test(
+    'logout cannot resurrect old captcha cookies from any same-site rule',
+    () async {
+      final manager = PluginCookieManager(browserCookieReader: (_) async => '');
+      for (final name in ['first', 'second']) {
+        await manager.saveFromWebView(
+          name,
+          'https://example.org',
+          'stale=token',
+          userAgent: 'old-ua',
+        );
+      }
+      await manager.saveLoginSession('https://example.org', 'browser-ua');
+      for (final name in ['first', 'second', 'brand new']) {
+        expect(
+          await manager.loadForRequest(name, Uri.parse('https://example.org')),
+          isEmpty,
+        );
+      }
+      // Even if browser access is unavailable, never fall back to stale snapshots.
+      manager.browserCookieReader = null;
+      expect(
+        await manager.loadForRequest('first', Uri.parse('https://example.org')),
+        isEmpty,
+      );
+    },
+  );
+
+  test(
+    'concurrent website saves persist all sites and notify observers',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'kazumi-concurrent-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final manager = PluginCookieManager();
+      await manager.init(directory);
+      var changes = 0;
+      manager.addListener(() => changes++);
+      await Future.wait([
+        manager.saveLoginSession('https://first.org', 'ua1'),
+        manager.saveLoginSession('https://second.org', 'ua2'),
+      ]);
+      final restored = PluginCookieManager();
+      await restored.init(directory);
+      expect(restored.savedSites, hasLength(2));
+      expect(changes, 2);
+    },
+  );
+
+  test('rejects non-web login URLs and URLs containing credentials', () async {
     final manager = PluginCookieManager();
-    await expectLater(
-      manager.saveLoginSession('site', 'file:///tmp/site', 'ua'),
-      throwsFormatException,
-    );
+    for (final url in [
+      'file:///tmp/site',
+      'https://user:secret@example.org/',
+    ]) {
+      await expectLater(
+        manager.saveLoginSession(url, 'ua'),
+        throwsFormatException,
+      );
+    }
   });
 }

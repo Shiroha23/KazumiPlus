@@ -13,21 +13,28 @@ import 'package:kazumi/webview/login/website_browser.dart';
 import 'package:webview_windows/webview_windows.dart' as windows;
 
 Future<bool> showWebsiteLogin(BuildContext context, Plugin plugin) async {
-  final uri = Uri.tryParse(plugin.baseUrl);
+  return showWebsiteLoginForSite(context, plugin.baseUrl);
+}
+
+Future<bool> showWebsiteLoginForSite(
+  BuildContext context,
+  String siteUrl,
+) async {
+  final uri = Uri.tryParse(siteUrl);
   if (uri == null || !PluginCookieManager.isWebsiteUrl(uri)) {
-    KazumiDialog.showToast(message: '规则的网站地址无效，请先编辑规则');
+    KazumiDialog.showToast(message: '网站地址无效，请检查 http 或 https 地址');
     return false;
   }
   return await Navigator.of(context, rootNavigator: true).push<bool>(
-        MaterialPageRoute(builder: (_) => WebsiteLoginPage(plugin: plugin)),
+        MaterialPageRoute(builder: (_) => WebsiteLoginPage(siteUrl: siteUrl)),
       ) ??
       false;
 }
 
 class WebsiteLoginPage extends StatefulWidget {
-  const WebsiteLoginPage({super.key, required this.plugin});
+  const WebsiteLoginPage({super.key, required this.siteUrl});
 
-  final Plugin plugin;
+  final String siteUrl;
 
   @override
   State<WebsiteLoginPage> createState() => _WebsiteLoginPageState();
@@ -45,10 +52,13 @@ class _WebsiteLoginPageState extends State<WebsiteLoginPage> {
   bool _saving = false;
   String? _error;
 
+  String get _siteHost =>
+      PluginCookieManager.siteHost(Uri.parse(widget.siteUrl));
+
   @override
   void initState() {
     super.initState();
-    _address.text = widget.plugin.baseUrl;
+    _address.text = widget.siteUrl;
     unawaited(_initialize());
   }
 
@@ -80,11 +90,11 @@ class _WebsiteLoginPageState extends State<WebsiteLoginPage> {
           }),
         );
         setState(() => _ready = true);
-        await controller.loadUrl(widget.plugin.baseUrl);
+        await controller.loadUrl(widget.siteUrl);
       } else if (Platform.isLinux) {
         final view = await linux.WebviewWindow.create(
           configuration: linux.CreateConfiguration(
-            title: '${widget.plugin.name} · 网站登录',
+            title: '$_siteHost · 网站登录',
             proxy: WebsiteBrowser.linuxProxy,
           ),
         );
@@ -97,7 +107,7 @@ class _WebsiteLoginPageState extends State<WebsiteLoginPage> {
           _updateAddress(url);
           return true;
         });
-        view.launch(widget.plugin.baseUrl);
+        view.launch(widget.siteUrl);
         unawaited(
           view.onClose.then((_) {
             if (mounted) {
@@ -116,7 +126,7 @@ class _WebsiteLoginPageState extends State<WebsiteLoginPage> {
       } else {
         _mobileWidget = PlatformInAppWebViewWidget(
           PlatformInAppWebViewWidgetCreationParams(
-            initialUrlRequest: URLRequest(url: WebUri(widget.plugin.baseUrl)),
+            initialUrlRequest: URLRequest(url: WebUri(widget.siteUrl)),
             initialSettings: InAppWebViewSettings(
               // Keep the default persistent store shared with video parsing.
               sharedCookiesEnabled: true,
@@ -197,8 +207,7 @@ class _WebsiteLoginPageState extends State<WebsiteLoginPage> {
         );
       }
       await PluginCookieManager.instance.saveLoginSession(
-        widget.plugin.name,
-        widget.plugin.baseUrl,
+        widget.siteUrl,
         result?.toString() ?? '',
       );
       if (mounted) Navigator.of(context).pop(true);
@@ -228,7 +237,7 @@ class _WebsiteLoginPageState extends State<WebsiteLoginPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: Text('${widget.plugin.name} · 网站登录'),
+      title: Text('$_siteHost · 网站登录'),
       actions: [
         TextButton(
           onPressed: _ready && !_saving ? _save : null,
@@ -264,7 +273,7 @@ class _WebsiteLoginPageState extends State<WebsiteLoginPage> {
                 IconButton(
                   tooltip: '网站首页',
                   onPressed: _ready
-                      ? () => _navigate(widget.plugin.baseUrl)
+                      ? () => _navigate(widget.siteUrl)
                       : null,
                   icon: const Icon(Icons.home_outlined),
                 ),
@@ -274,7 +283,7 @@ class _WebsiteLoginPageState extends State<WebsiteLoginPage> {
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Text(
-              '在网站中完成登录后，点击“保存并返回”。如有“记住登录”选项，请勾选以便下次使用。退出账号请在此网站内操作。',
+              '登录、切换或退出账号后，点击“保存并返回”。同站规则自动共用此会话，退出账号会对同站规则一起生效。登录是否有效请以网站显示为准。',
             ),
           ),
           if (_loading && _error == null) const LinearProgressIndicator(),

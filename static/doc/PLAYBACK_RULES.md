@@ -63,7 +63,7 @@
 
 初始变量有 `@pageUrl`、`@origin`、`@episodeNumber`、`@episodeIndex`。`pagePattern` 的命名捕获、`queryVariables`（变量名到播放页查询参数名的映射）、`defaults` 和前序步骤的 captures 可为后续请求和媒体请求头提供变量。捕获值是数据，不执行任意 JavaScript，不计算接口私有签名。
 
-请求复用规则的网站登录状态和 User-Agent。每个 API、视频和音频地址分别按目标域名读取 Cookie；不会把视频 Cookie 自动复制到另一个音频域名。`video.headers` 和 `audio.headers` 分别配置媒体请求头，支持变量。规则的 User-Agent 和 Referer 作为公共默认值，媒体流配置可以覆盖它们。请不要把账号凭据写入公开分享的规则。
+请求按目标网站复用已保存的登录状态和 User-Agent，同站新规则无需单独登记。每个 API、视频和音频地址分别按目标域名读取 Cookie；不会把视频 Cookie 自动复制到另一个音频域名。`video.headers` 和 `audio.headers` 分别配置媒体请求头，支持变量。规则的 User-Agent 和 Referer 作为公共默认值，媒体流配置可以覆盖它们。请不要把账号凭据写入公开分享的规则。
 
 原生播放器先暂停加载视频，再用音频自己的请求头附加外部音轨，确认音轨存在后才按自动播放设置启动。两条流使用同一个播放器时钟，暂停、倍速、跳转和断点续播共同生效，不需预先下载或转码。
 

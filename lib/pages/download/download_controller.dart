@@ -586,7 +586,8 @@ abstract class _DownloadController with Store {
         final source = await lease.resolve(
           fullUrl,
           useLegacyParser: plugin.useLegacyParser,
-          userAgent: PluginCookieManager.instance.userAgentFor(plugin.name),
+          userAgent: PluginCookieManager.instance.userAgentFor(
+              plugin.name, url: fullUrl),
           playbackConfig: plugin.playbackConfig,
           pluginName: plugin.name,
           httpHeaders: plugin.buildHttpHeaders(),

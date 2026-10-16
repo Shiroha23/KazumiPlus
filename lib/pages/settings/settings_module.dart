@@ -23,6 +23,8 @@ import 'package:kazumi/pages/settings/sync/webdav_server_page.dart';
 import 'package:kazumi/pages/settings/sync/webdav_sync_page.dart';
 import 'package:kazumi/pages/settings/theme_settings_page.dart';
 import 'package:kazumi/pages/settings/update_settings.dart';
+import 'package:kazumi/pages/settings/website_login_settings.dart';
+import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/request/config/api_endpoints.dart';
 import 'package:kazumi/services/sync/danmaku_shield_sync_service.dart';
 
@@ -51,6 +53,10 @@ final settingsModule = createModule(
           ..route('/storage',
               child: (context, state) => const StorageSettingsPage())
           ..route('/storage/logs', child: (context, state) => const LogsPage())
+          ..route('/website-login',
+              child: (context, state) => WebsiteLoginSettingsPage(
+                    controller: inject<PluginsController>(),
+                  ))
           ..route('/theme',
               child: (context, state) => const ThemeSettingsPage())
           ..route(

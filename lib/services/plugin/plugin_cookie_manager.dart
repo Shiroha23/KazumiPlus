@@ -2,30 +2,43 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cookie_jar/cookie_jar.dart';
+import 'package:flutter/foundation.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/utils/async_serial_queue.dart';
 
 typedef BrowserCookieReader = Future<String> Function(Uri uri);
 
-/// 每条规则的 Cookie 管理器
-///
-/// 为每条规则维护一个独立的内存 [CookieJar]，
-/// 通过 [saveFromWebView] 将 WebView 捕获的 document.cookie 字符串
-/// 解析后存入对应规则的 jar。规则请求执行器按需读取并组装 Cookie 请求头。
-/// 验证 Cookie 通常与 User-Agent 绑定，故同时记录 WebView 的 UA，
-/// 供后续 dio 请求对齐指纹。
-/// 验证码快照仅在当前会话有效；网站登录从系统浏览器读取，遵循网站的过期设置。
-class PluginCookieManager {
+/// A saved website registration, not proof that the website is still logged in.
+/// Authentication stays in the platform browser's persistent data store.
+class WebsiteLoginSession {
+  const WebsiteLoginSession({required this.site, required this.userAgent});
+
+  final Uri site;
+  final String userAgent;
+
+  String get host => PluginCookieManager.siteHost(site);
+}
+
+/// Website logins are shared by host, independently of installed rule names.
+/// Captcha snapshots remain temporary and scoped to the rule that captured them.
+class PluginCookieManager extends ChangeNotifier {
   PluginCookieManager({this.browserCookieReader});
   static final PluginCookieManager instance = PluginCookieManager();
 
   BrowserCookieReader? browserCookieReader;
-  final Map<String, Uri> _loginSites = {};
+  final Map<String, WebsiteLoginSession> _loginSites = {};
   final AsyncSerialQueue _writes = AsyncSerialQueue();
   File? _sessionsFile;
 
   final Map<String, CookieJar> _jars = {};
   final Map<String, String> _userAgents = {};
+  final Map<String, Uri> _captchaSites = {};
+
+  List<WebsiteLoginSession> get savedSites {
+    final sites = _loginSites.values.toList()
+      ..sort((a, b) => a.host.compareTo(b.host));
+    return List.unmodifiable(sites);
+  }
 
   /// Only site URLs and browser fingerprints are stored here. Credentials,
   /// cookies and localStorage remain in the platform browser's data store.
@@ -34,52 +47,124 @@ class PluginCookieManager {
     _sessionsFile = file;
     try {
       if (!await file.exists()) return;
-      final entries = jsonDecode(await file.readAsString()) as Map;
-      for (final entry in entries.entries) {
-        final value = Map<String, dynamic>.from(entry.value as Map);
-        final uri = Uri.tryParse(value['site'] as String? ?? '');
-        if (uri == null || !isWebsiteUrl(uri)) continue;
-        _loginSites[entry.key as String] = uri;
-        final ua = value['userAgent'] as String?;
-        if (ua != null && ua.isNotEmpty) _userAgents[entry.key as String] = ua;
+      final data = jsonDecode(await file.readAsString()) as Map;
+      final legacy = !data.containsKey('version');
+      final Iterable<dynamic> entries;
+      if (legacy) {
+        entries = data.values;
+      } else if (data['version'] == 2 && data['sites'] is List) {
+        entries = data['sites'] as List;
+      } else {
+        throw const FormatException('Unsupported website session format');
       }
+      for (final value in entries) {
+        if (value is! Map || value['site'] is! String) continue;
+        final uri = Uri.tryParse(value['site'] as String);
+        if (uri == null || !isWebsiteUrl(uri)) continue;
+        final session = WebsiteLoginSession(
+          site: _homeUrl(uri),
+          userAgent: value['userAgent'] is String
+              ? (value['userAgent'] as String).trim()
+              : '',
+        );
+        final previous = _loginSites[session.host];
+        _loginSites[session.host] =
+            session.userAgent.isEmpty && previous != null ? previous : session;
+      }
+      if (legacy) await _writes.run(_persist);
+      notifyListeners();
     } catch (error) {
       KazumiLogger().w('Unable to restore website sessions', error: error);
     }
   }
 
   static bool isWebsiteUrl(Uri uri) =>
-      (uri.scheme == 'http' || uri.scheme == 'https') && uri.host.isNotEmpty;
+      (uri.scheme == 'http' || uri.scheme == 'https') &&
+      uri.host.isNotEmpty &&
+      uri.userInfo.isEmpty;
 
-  static bool isSiteHost(Uri site, Uri target) =>
-      isWebsiteUrl(target) &&
-      (target.host == site.host || target.host.endsWith('.${site.host}'));
+  /// Normalize www without guessing a registrable domain, which could merge
+  /// unrelated websites on shared hosts such as example.co.uk or user.github.io.
+  static String siteHost(Uri uri) {
+    var host = uri.host.toLowerCase().replaceFirst(RegExp(r'\.$'), '');
+    if (host.startsWith('www.')) host = host.substring(4);
+    return host;
+  }
 
-  Future<void> saveLoginSession(
-    String pluginName,
-    String siteUrl,
-    String userAgent,
-  ) async {
+  static Uri _homeUrl(Uri uri) => Uri(
+    scheme: uri.scheme,
+    host: uri.host.toLowerCase(),
+    port: uri.hasPort ? uri.port : null,
+    path: '/',
+  );
+
+  static bool isSiteHost(Uri site, Uri target) {
+    if (!isWebsiteUrl(site) || !isWebsiteUrl(target)) return false;
+    final host = siteHost(site);
+    final targetHost = siteHost(target);
+    return targetHost == host ||
+        (InternetAddress.tryParse(host) == null &&
+            targetHost.endsWith('.$host'));
+  }
+
+  WebsiteLoginSession? sessionFor(Uri uri) {
+    WebsiteLoginSession? match;
+    for (final session in _loginSites.values) {
+      if (isSiteHost(session.site, uri) &&
+          (match == null || session.host.length > match.host.length)) {
+        match = session;
+      }
+    }
+    return match;
+  }
+
+  Future<void> _persist() async {
+    final file = _sessionsFile;
+    if (file == null) return;
+    await file.parent.create(recursive: true);
+    await file.writeAsString(
+      jsonEncode({
+        'version': 2,
+        'sites': [
+          for (final session in savedSites)
+            {'site': session.site.toString(), 'userAgent': session.userAgent},
+        ],
+      }),
+      flush: true,
+    );
+  }
+
+  Future<void> saveLoginSession(String siteUrl, String userAgent) async {
     final site = Uri.parse(siteUrl);
     if (!isWebsiteUrl(site)) throw const FormatException('无效的网站地址');
-    _loginSites[pluginName] = site;
-    if (userAgent.trim().isNotEmpty) {
-      _userAgents[pluginName] = userAgent.trim();
-    }
-    // Do not let an old captcha snapshot resurrect cookies after website logout.
-    _jars.remove(pluginName);
     await _writes.run(() async {
-      final file = _sessionsFile;
-      if (file == null) return;
-      await file.parent.create(recursive: true);
-      final data = {
-        for (final entry in _loginSites.entries)
-          entry.key: {
-            'site': entry.value.toString(),
-            'userAgent': _userAgents[entry.key] ?? '',
-          },
-      };
-      await file.writeAsString(jsonEncode(data), flush: true);
+      final host = siteHost(site);
+      final previous = _loginSites[host];
+      _loginSites[host] = WebsiteLoginSession(
+        site: _homeUrl(site),
+        userAgent: userAgent.trim().isEmpty
+            ? previous?.userAgent ?? ''
+            : userAgent.trim(),
+      );
+      try {
+        await _persist();
+      } catch (_) {
+        if (previous == null) {
+          _loginSites.remove(host);
+        } else {
+          _loginSites[host] = previous;
+        }
+        rethrow;
+      }
+      // Never let a snapshot captured before website logout resurrect cookies.
+      for (final entry in _captchaSites.entries.toList()) {
+        if (isSiteHost(site, entry.value)) {
+          _jars.remove(entry.key);
+          _userAgents.remove(entry.key);
+          _captchaSites.remove(entry.key);
+        }
+      }
+      notifyListeners();
     });
   }
 
@@ -92,7 +177,7 @@ class PluginCookieManager {
     final cookies = uri == null
         ? <Cookie>[]
         : await loadForRequest(pluginName, uri);
-    final userAgent = userAgentFor(pluginName);
+    final userAgent = userAgentFor(pluginName, url: url);
     return {
       ...headers,
       'user-agent': ?userAgent,
@@ -103,24 +188,21 @@ class PluginCookieManager {
     };
   }
 
-  CookieJar _getJar(String pluginName) {
-    return _jars.putIfAbsent(pluginName, () => CookieJar());
-  }
-
   Future<void> saveFromWebView(
     String pluginName,
     String pageUrl,
     String cookieString, {
     String? userAgent,
   }) async {
+    final uri = Uri.tryParse(pageUrl);
+    if (uri == null || !isWebsiteUrl(uri)) return;
+    _captchaSites[pluginName] = uri;
     if (userAgent != null && userAgent.trim().isNotEmpty) {
       _userAgents[pluginName] = userAgent.trim();
     }
     if (cookieString.trim().isEmpty) return;
-    final uri = Uri.tryParse(pageUrl);
-    if (uri == null) return;
 
-    final jar = _getJar(pluginName);
+    final jar = _jars.putIfAbsent(pluginName, () => CookieJar());
     final cookies = _parseCookieString(cookieString, uri);
     if (cookies.isEmpty) return;
 
@@ -130,7 +212,6 @@ class PluginCookieManager {
     );
   }
 
-  /// 解析字符串为 [Cookie] 列表
   List<Cookie> _parseCookieString(String raw, Uri uri) {
     final cookies = <Cookie>[];
     for (final part in raw.split(';')) {
@@ -151,11 +232,13 @@ class PluginCookieManager {
   }
 
   Future<List<Cookie>> loadForRequest(String pluginName, Uri uri) async {
-    final site = _loginSites[pluginName];
+    if (!isWebsiteUrl(uri)) return <Cookie>[];
+    final session = sessionFor(uri);
     final reader = browserCookieReader;
-    if (site != null && reader != null && isSiteHost(site, uri)) {
-      // Read natively for each URL, including HttpOnly cookies and their actual
-      // domain/path/expiry rules. Never serialize authentication tokens ourselves.
+    if (session != null) {
+      // Let the browser enforce each target's domain/path/expiry/secure rules,
+      // including HttpOnly cookies. No credentials are copied between hosts.
+      if (reader == null) return <Cookie>[];
       return _parseCookieString(await reader(uri), uri);
     }
     final jar = _jars[pluginName];
@@ -163,6 +246,15 @@ class PluginCookieManager {
     return jar.loadForRequest(uri);
   }
 
-  /// 验证时 WebView 使用的 User-Agent；未验证过的规则返回 null
-  String? userAgentFor(String pluginName) => _userAgents[pluginName];
+  String? userAgentFor(String pluginName, {required String url}) {
+    final uri = Uri.tryParse(url);
+    if (uri == null || !isWebsiteUrl(uri)) return null;
+    final session = sessionFor(uri);
+    if (session != null) {
+      return session.userAgent.isEmpty ? null : session.userAgent;
+    }
+    final captchaSite = _captchaSites[pluginName];
+    if (captchaSite == null || !isSiteHost(captchaSite, uri)) return null;
+    return _userAgents[pluginName];
+  }
 }
