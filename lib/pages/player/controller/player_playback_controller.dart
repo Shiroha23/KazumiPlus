@@ -2,6 +2,7 @@
 
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:kazumi/services/player/separate_media_playback.dart';
 
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
@@ -272,6 +273,8 @@ abstract class _PlayerPlaybackController with Store {
     required bool Function() canInstall,
     int offset = 0,
     VideoSourceFormat videoSourceFormat = VideoSourceFormat.auto,
+    String? audioUrl,
+    Map<String, String> audioHttpHeaders = const {},
   }) async {
     startOffset = offset;
     superResolutionMode = SuperResolutionMode.fromStorageValue(
@@ -456,10 +459,12 @@ abstract class _PlayerPlaybackController with Store {
         }
       }
 
-      await player.open(
-        Media(videoUrl(),
-            start: Duration(seconds: offset), httpHeaders: httpHeaders),
-        play: autoPlay,
+      await openPlaybackMedia(
+        adapter: NativeMediaPlaybackAdapter(player),
+        videoUrl: videoUrl(), videoHeaders: httpHeaders,
+        audioUrl: audioUrl, audioHeaders: audioHttpHeaders,
+        offset: offset, autoPlay: autoPlay,
+        isCurrent: () => isCurrentPlayer(player) && canInstall(),
       );
       if (!isCurrentPlayer(player)) {
         return await _discardIfNotCurrent(candidate);

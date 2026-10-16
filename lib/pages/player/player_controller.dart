@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -84,6 +85,7 @@ class PlayerController implements Disposable {
   late String referer;
   String? coverUrl;
   String videoUrl = '';
+  String? audioUrl;
   bool isLocalPlayback = false;
   Timer? hideVolumeUITimer;
   Timer? _volumeGestureSyncTimer;
@@ -170,6 +172,7 @@ class PlayerController implements Disposable {
     final initialization = _initializations.begin();
 
     videoUrl = params.videoUrl;
+    audioUrl = params.audioUrl;
     isLocalPlayback = params.isLocalPlayback;
     bangumiId = params.bangumiId;
     currentEpisode = params.episode;
@@ -205,6 +208,8 @@ class PlayerController implements Disposable {
         canInstall: () => initialization.isActive,
         offset: params.offset,
         videoSourceFormat: params.videoSourceFormat,
+        audioUrl: params.audioUrl,
+        audioHttpHeaders: params.audioHttpHeaders,
       );
     } catch (e) {
       if (initialization.isStale) {
@@ -449,6 +454,10 @@ class PlayerController implements Disposable {
   }
 
   Future<void> launchExternalPlayer() async {
+    if (audioUrl != null) {
+      KazumiDialog.showToast(message: '该视频包含独立音轨，请使用内置播放器');
+      return;
+    }
     await externalPlayback.launch();
   }
 

@@ -1,3 +1,4 @@
+import 'package:kazumi/plugins/playback_rule_config.dart';
 import 'dart:async';
 
 import 'package:kazumi/services/video_source/video_source_service.dart';
@@ -111,6 +112,10 @@ class VideoSourceResolverLease {
     String episodeUrl, {
     required bool useLegacyParser,
     String? userAgent,
+    PlaybackRuleConfig? playbackConfig,
+    String pluginName = '',
+    Map<String, String> httpHeaders = const {},
+    int episodeNumber = 1,
     int offset = 0,
     Duration timeout = const Duration(seconds: 30),
   }) async {
@@ -121,6 +126,10 @@ class VideoSourceResolverLease {
       episodeUrl,
       useLegacyParser: useLegacyParser,
       userAgent: userAgent,
+      playbackConfig: playbackConfig,
+      pluginName: pluginName,
+      httpHeaders: httpHeaders,
+      episodeNumber: episodeNumber,
       offset: offset,
       timeout: timeout,
     );
@@ -148,6 +157,10 @@ class _VideoSourceResolverWorker {
     String episodeUrl, {
     required bool useLegacyParser,
     String? userAgent,
+    PlaybackRuleConfig? playbackConfig,
+    String pluginName = '',
+    Map<String, String> httpHeaders = const {},
+    int episodeNumber = 1,
     int offset = 0,
     Duration timeout = const Duration(seconds: 30),
   }) {
@@ -155,6 +168,10 @@ class _VideoSourceResolverWorker {
       episodeUrl,
       useLegacyParser: useLegacyParser,
       userAgent: userAgent,
+      playbackConfig: playbackConfig,
+      pluginName: pluginName,
+      httpHeaders: httpHeaders,
+      episodeNumber: episodeNumber,
       offset: offset,
       timeout: timeout,
     );

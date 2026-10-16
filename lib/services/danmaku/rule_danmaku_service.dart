@@ -2,12 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart' as html;
 import 'package:kazumi/modules/danmaku/danmaku_module.dart';
-import 'package:kazumi/plugins/api_rule_config.dart';
 import 'package:kazumi/plugins/danmaku_rule_config.dart';
-import 'package:kazumi/request/clients/plugin_site_client.dart';
-import 'package:kazumi/request/core/network_exception.dart';
 import 'package:kazumi/services/plugin/api_rule_strategy.dart';
-import 'package:kazumi/services/plugin/plugin_cookie_manager.dart';
+import 'package:kazumi/services/plugin/rule_request_pipeline.dart';
 
 /// Executes website rules without knowing any site name, domain or endpoint.
 class RuleDanmakuService {
@@ -73,162 +70,19 @@ class RuleDanmakuService {
   }) async {
     validate(config);
     if (!config.enabled) return [];
-    final page = Uri.tryParse(pageUrl);
-    if (page == null ||
-        !{'http', 'https'}.contains(page.scheme) ||
-        page.host.isEmpty) {
-      throw const FormatException('弹幕规则需要有效的播放页 URL');
-    }
-    final variables = <String, Object?>{
-      ...config.defaults,
-      'pageUrl': pageUrl,
-      'origin': page.origin,
-      'videoUrl': videoUrl,
-      'episodeNumber': episodeNumber,
-    };
-    if (config.pagePattern.isNotEmpty) {
-      final match = RegExp(config.pagePattern).firstMatch(pageUrl);
-      if (match == null) throw const FormatException('弹幕播放页正则未匹配');
-      for (final name in match.groupNames) {
-        if (match.namedGroup(name) != null) {
-          variables[name] = match.namedGroup(name);
-        }
-      }
-    }
-    final number = int.tryParse('${variables['episodeNumber']}');
-    if (number == null || number < 1) throw const FormatException('弹幕集数无效');
-    variables['episodeNumber'] = number;
-    variables['episodeIndex'] = number - 1;
-    for (final entry in config.queryVariables.entries) {
-      final value = page.queryParameters[entry.value];
-      if (value != null && value.isNotEmpty) variables[entry.key] = value;
-    }
-
-    var raw = '';
-    for (var i = 0; i < config.steps.length; i++) {
-      final step = config.steps[i];
-      _checkCancelled(cancelToken);
-      if (step.pageSize > 0) {
-        variables['pageNumber'] = (number - 1) ~/ step.pageSize + 1;
-        variables['pageIndex'] = (number - 1) % step.pageSize;
-      }
-      final requestJson = step.request.toJson();
-      var url = step.request.url.trim();
-      if (RegExp(r'^@[A-Za-z_][A-Za-z0-9_]*$').hasMatch(url)) {
-        // Whole captured URLs already contain their own escaping.
-        url = _render(url, variables);
-      } else if (url.startsWith('@origin/')) {
-        url = page.origin + url.substring('@origin'.length);
-      }
-      if (url.startsWith('/')) url = page.resolve(url).toString();
-      final request = _api.prepareRequest(
-        ApiRequestConfig.fromJson({...requestJson, 'url': url}),
-        variables,
-      );
-      if (!{'http', 'https'}.contains(Uri.parse(request.url).scheme)) {
-        throw const FormatException('弹幕请求只支持 HTTP/HTTPS');
-      }
-      final headers = await PluginCookieManager.instance
-          .headersFor(pluginName, request.url, {
-            'referer': pageUrl,
-            for (final entry in request.headers.entries)
-              entry.key.toLowerCase(): entry.value.toString(),
-          });
-      if (request.bodyType != ApiBodyType.none) {
-        headers.putIfAbsent(
-          'content-type',
-          () => request.bodyType == ApiBodyType.form
-              ? 'application/x-www-form-urlencoded'
-              : 'application/json',
-        );
-      }
-      raw = await PluginSiteClient.instance.requestText(
-        request.url,
-        method: request.method,
-        headers: headers,
-        queryParameters: request.query,
-        data: request.body,
-        cancelToken: cancelToken,
-      );
-      _checkCancelled(cancelToken);
-      final last = i == config.steps.length - 1;
-      for (final entry in step.regexCaptures.entries) {
-        final match = RegExp(entry.value).firstMatch(raw);
-        if (match == null || match.groupCount < 1 || match.group(1) == null) {
-          throw FormatException('弹幕正则未提取到变量 ${entry.key}');
-        }
-        variables[entry.key] = match.group(1);
-      }
-      if (!last &&
-          step.captures.isEmpty &&
-          step.listPath.isEmpty &&
-          step.successPath.isEmpty) {
-        continue;
-      }
-      if (last && config.format == 'bilibiliXml') {
-        if (step.captures.isNotEmpty ||
-            step.successPath.isNotEmpty ||
-            step.listPath.isNotEmpty) {
-          throw const FormatException('XML 最后一步不支持 JSON 提取');
-        }
-        continue;
-      }
-      final document = _api.decodeResponse(raw);
-      if (step.successPath.isNotEmpty &&
-          '${RestrictedJsonPath.readFirst(document, step.successPath)}' !=
-              '${step.successValue}') {
-        throw const FormatException('弹幕接口报告请求失败');
-      }
-      Object? selected = document;
-      if (step.listPath.isNotEmpty) {
-        final nodes = RestrictedJsonPath.read(document, step.listPath);
-        final value = _render(step.matchValue, variables);
-        var hasOrder = false;
-        selected = null;
-        if (step.matchPath.isNotEmpty) {
-          for (final node in nodes) {
-            final order = RestrictedJsonPath.readFirst(node, step.matchPath);
-            hasOrder |= order != null;
-            if (order != null && '$order' == value) {
-              selected = node;
-              break;
-            }
-          }
-        }
-        if (selected == null && !hasOrder) {
-          final index = int.tryParse(_render(step.index, variables));
-          if (index != null && index >= 0 && index < nodes.length) {
-            selected = nodes[index];
-          }
-        }
-        if (selected == null) throw const FormatException('弹幕预请求未找到对应集数');
-      }
-      for (final entry in step.captures.entries) {
-        final value = RestrictedJsonPath.readFirst(selected, entry.value);
-        if (value == null) throw FormatException('弹幕预请求缺少变量 ${entry.key}');
-        variables[entry.key] = value;
-      }
-    }
-    return parse(raw, config, source: pluginName);
-  }
-
-  static String _render(String template, Map<String, Object?> variables) =>
-      template.replaceAllMapped(RegExp(r'@([A-Za-z_][A-Za-z0-9_]*)'), (match) {
-        final name = match.group(1)!;
-        if (!variables.containsKey(name)) {
-          throw FormatException('缺少弹幕变量 @$name');
-        }
-        return '${variables[name]}';
-      });
-
-  static void _checkCancelled(CancelToken? token) {
-    if (token != null && token.isCancelled) {
-      throw NetworkException(
-        type: NetworkExceptionType.cancel,
-        message: '请求已被取消，请重新请求',
-        rawError: token.cancelError,
-      );
-    }
+    final result = await RuleRequestPipeline.execute(
+      pageUrl: pageUrl,
+      pluginName: pluginName,
+      episodeNumber: episodeNumber,
+      steps: config.steps,
+      pagePattern: config.pagePattern,
+      defaults: config.defaults,
+      queryVariables: config.queryVariables,
+      videoUrl: videoUrl,
+      finalIsXml: config.format == 'bilibiliXml',
+      cancelToken: cancelToken,
+    );
+    return parse(result.raw, config, source: pluginName);
   }
 
   static List<DanmakuEntry> parse(

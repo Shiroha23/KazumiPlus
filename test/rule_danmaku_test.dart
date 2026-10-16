@@ -80,6 +80,7 @@ void main() {
   test('all optional rule fields survive JSON and sharing import/export', () {
     final config = _multiStepConfig();
     final plugin = Plugin.fromTemplate()
+      ..api = '9'
       ..name = 'unrelated'
       ..danmakuConfig = config;
     final json = plugin.toJson();

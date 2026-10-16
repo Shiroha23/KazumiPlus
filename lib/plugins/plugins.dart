@@ -3,6 +3,7 @@ import 'package:kazumi/modules/search/plugin_search_module.dart';
 import 'package:kazumi/plugins/anti_crawler_config.dart';
 import 'package:kazumi/plugins/api_rule_config.dart';
 import 'package:kazumi/plugins/danmaku_rule_config.dart';
+import 'package:kazumi/plugins/playback_rule_config.dart';
 import 'package:kazumi/request/config/api_endpoints.dart';
 import 'package:kazumi/services/plugin/api_rule_engine.dart';
 import 'package:kazumi/utils/episode_url.dart';
@@ -49,6 +50,7 @@ class Plugin {
   ApiChapterConfig chapterApiConfig;
   AntiCrawlerConfig antiCrawlerConfig;
   DanmakuRuleConfig? danmakuConfig;
+  PlaybackRuleConfig? playbackConfig;
 
   Plugin({
     required this.api,
@@ -76,9 +78,10 @@ class Plugin {
     ApiChapterConfig? chapterApiConfig,
     AntiCrawlerConfig? antiCrawlerConfig,
     this.danmakuConfig,
-  })  : searchApiConfig = searchApiConfig ?? ApiSearchConfig(),
-        chapterApiConfig = chapterApiConfig ?? ApiChapterConfig(),
-        antiCrawlerConfig = antiCrawlerConfig ?? AntiCrawlerConfig.empty();
+    this.playbackConfig,
+  }) : searchApiConfig = searchApiConfig ?? ApiSearchConfig(),
+       chapterApiConfig = chapterApiConfig ?? ApiChapterConfig(),
+       antiCrawlerConfig = antiCrawlerConfig ?? AntiCrawlerConfig.empty();
 
   factory Plugin.fromJson(Map<String, dynamic> json) {
     return Plugin(
@@ -123,6 +126,11 @@ class Plugin {
               Map<String, dynamic>.from(json['danmakuConfig']),
             )
           : null,
+      playbackConfig: json['playbackConfig'] is Map
+          ? PlaybackRuleConfig.fromJson(
+              Map<String, dynamic>.from(json['playbackConfig']),
+            )
+          : null,
     );
   }
 
@@ -157,7 +165,11 @@ class Plugin {
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
-      'api': danmakuConfig != null && (int.tryParse(api) ?? 0) < 10 ? '10' : api,
+      'api': playbackConfig != null && (int.tryParse(api) ?? 0) < 11
+          ? '11'
+          : danmakuConfig != null && (int.tryParse(api) ?? 0) < 10
+          ? '10'
+          : api,
       'type': type,
       'name': name,
       'version': version,
@@ -177,6 +189,7 @@ class Plugin {
       'chapterResult': chapterResult,
       'referer': referer,
       'danmakuConfig': danmakuConfig?.toJson(),
+      if (playbackConfig != null) 'playbackConfig': playbackConfig!.toJson(),
       'searchMode': searchMode,
       'chapterMode': chapterMode,
       // Persisting re-serializes the whole plugin list, so a configured API
@@ -195,21 +208,21 @@ class Plugin {
   bool get requiresNewerClient => int.parse(api) > ApiEndpoints.apiLevel;
 
   RuleExecutionConfig get _executionConfig => RuleExecutionConfig(
-        pluginName: name,
-        baseUrl: baseUrl,
-        usePost: usePost,
-        searchMode: searchMode,
-        chapterMode: chapterMode,
-        searchUrl: searchURL,
-        searchList: searchList,
-        searchName: searchName,
-        searchResult: searchResult,
-        chapterRoads: chapterRoads,
-        chapterResult: chapterResult,
-        searchApiConfig: searchApiConfig,
-        chapterApiConfig: chapterApiConfig,
-        antiCrawlerConfig: antiCrawlerConfig,
-      );
+    pluginName: name,
+    baseUrl: baseUrl,
+    usePost: usePost,
+    searchMode: searchMode,
+    chapterMode: chapterMode,
+    searchUrl: searchURL,
+    searchList: searchList,
+    searchName: searchName,
+    searchResult: searchResult,
+    chapterRoads: chapterRoads,
+    chapterResult: chapterResult,
+    searchApiConfig: searchApiConfig,
+    chapterApiConfig: chapterApiConfig,
+    antiCrawlerConfig: antiCrawlerConfig,
+  );
 
   Future<RuleSearchTrace> traceSearch(
     String keyword, {

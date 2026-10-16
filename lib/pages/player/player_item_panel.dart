@@ -868,6 +868,10 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                   KazumiMenuItem(
                     onPressed: () {
                       final needRestart = playerController.playback.playing;
+                      if (playerController.audioUrl != null) {
+                        KazumiDialog.showToast(message: '该视频包含独立音轨，请使用内置播放器');
+                        return;
+                      }
                       playerController.pause();
                       RemotePlay()
                           .castVideo(playerController.videoUrl,

@@ -111,8 +111,10 @@ class ApiRuleStrategy {
 
   PreparedRuleRequest prepareRequest(
     ApiRequestConfig config,
-    Map<String, Object?> variables,
-  ) {
+    Map<String, Object?> variables, {
+    // Complete captured URLs are already resolved data, not templates.
+    String? resolvedUrl,
+  }) {
     final method = config.method.toUpperCase();
     if (method != 'GET' && method != 'POST') {
       throw ApiRuleFormatException('仅支持 GET/POST，当前为 $method');
@@ -120,7 +122,8 @@ class ApiRuleStrategy {
     if (config.url.trim().isEmpty) {
       throw const ApiRuleFormatException('API 请求 URL 不能为空');
     }
-    final url = _renderTemplate(config.url.trim(), variables, encode: true);
+    final url = resolvedUrl ??
+        _renderTemplate(config.url.trim(), variables, encode: true);
     final uri = Uri.tryParse(url);
     if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
       throw ApiRuleFormatException('API 请求 URL 无效: $url');

@@ -578,6 +578,7 @@ abstract class _DownloadController with Store {
           'DownloadController: resolving video URL for episode ${request.episodeNumber} from $fullUrl');
 
       String? m3u8Url;
+      Map<String, String>? resolvedHeaders;
       try {
         if (lease.isCancelled) {
           throw const VideoSourceCancelledException();
@@ -586,9 +587,19 @@ abstract class _DownloadController with Store {
           fullUrl,
           useLegacyParser: plugin.useLegacyParser,
           userAgent: PluginCookieManager.instance.userAgentFor(plugin.name),
+          playbackConfig: plugin.playbackConfig,
+          pluginName: plugin.name,
+          httpHeaders: plugin.buildHttpHeaders(),
+          episodeNumber: request.episodeNumber,
           timeout: const Duration(seconds: 30),
         );
         m3u8Url = source.url;
+        if (source.audioUrl != null) {
+          _failEpisode(request.recordKey, request.episodeNumber,
+              '暂不支持下载分离的音视频流，请使用在线内置播放器');
+          return;
+        }
+        if (source.httpHeaders.isNotEmpty) resolvedHeaders = source.httpHeaders;
       } on VideoSourceTimeoutException {
         if (lease.isCancelled) {
           wasCancelled = true;
@@ -635,7 +646,7 @@ abstract class _DownloadController with Store {
 
       await _startBackgroundServiceIfNeeded();
 
-      final httpHeaders = plugin.buildHttpHeaders();
+      final httpHeaders = resolvedHeaders ?? plugin.buildHttpHeaders();
       bool adBlockerEnabled =
           _repository.getForceAdBlocker() || plugin.adBlocker;
 

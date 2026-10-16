@@ -1,10 +1,11 @@
 import 'dart:async';
+import 'package:kazumi/plugins/playback_rule_config.dart';
 
 import 'package:kazumi/services/video_source/video_source_format.dart';
 
 /// 视频源类型
 enum VideoSourceType {
-  /// 在线解析（WebView）
+  /// 在线解析（规则 API 或 WebView）
   online,
 
   /// 本地缓存
@@ -15,6 +16,11 @@ enum VideoSourceType {
 class VideoSource {
   /// 视频 URL (M3U8/MP4/本地路径)
   final String url;
+
+  /// Optional separate audio stream, synchronized by the native player.
+  final String? audioUrl;
+  final Map<String, String> httpHeaders;
+  final Map<String, String> audioHttpHeaders;
 
   /// 播放偏移量（秒）
   final int offset;
@@ -30,6 +36,9 @@ class VideoSource {
     required this.offset,
     required this.type,
     this.format = VideoSourceFormat.auto,
+    this.audioUrl,
+    this.httpHeaders = const {},
+    this.audioHttpHeaders = const {},
   });
 
   @override
@@ -89,6 +98,10 @@ abstract class IVideoSourceService {
     String episodeUrl, {
     required bool useLegacyParser,
     String? userAgent,
+    PlaybackRuleConfig? playbackConfig,
+    String pluginName = '',
+    Map<String, String> httpHeaders = const {},
+    int episodeNumber = 1,
     int offset = 0,
     Duration timeout = const Duration(seconds: 30),
   });

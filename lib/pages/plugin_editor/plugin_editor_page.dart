@@ -12,6 +12,8 @@ import 'package:kazumi/pages/plugin_editor/editor_form_widgets.dart';
 import 'package:kazumi/plugins/anti_crawler_config.dart';
 import 'package:kazumi/plugins/api_rule_config.dart';
 import 'package:kazumi/plugins/danmaku_rule_config.dart';
+import 'package:kazumi/plugins/playback_rule_config.dart';
+import 'package:kazumi/services/video_source/rule_playback_service.dart';
 import 'package:kazumi/plugins/danmaku_rule_presets.dart';
 import 'package:kazumi/services/danmaku/rule_danmaku_service.dart';
 import 'package:kazumi/plugins/plugins.dart';
@@ -171,6 +173,11 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
   CancelToken? _danmakuTestCancel;
   bool _testingDanmaku = false;
   String? _danmakuTestResult;
+  final _playbackJson = TextEditingController();
+  final _playbackTestPage = TextEditingController();
+  CancelToken? _playbackTestCancel;
+  bool _testingPlayback = false;
+  String? _playbackTestResult;
   final TextEditingController nameController = TextEditingController();
   final TextEditingController versionController = TextEditingController();
   final TextEditingController userAgentController = TextEditingController();
@@ -289,6 +296,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
     super.initState();
     final Plugin plugin = widget.plugin;
     _danmakuJson.text = _prettyJson(plugin.danmakuConfig?.toJson());
+    _playbackJson.text = _prettyJson(plugin.playbackConfig?.toJson());
     _api = plugin.api;
     _type = plugin.type;
     nameController.text = plugin.name;
@@ -372,6 +380,9 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
 
   @override
   void dispose() {
+    _playbackTestCancel?.cancel();
+    _playbackJson.dispose();
+    _playbackTestPage.dispose();
     _danmakuTestCancel?.cancel();
     _danmakuJson.dispose();
     _danmakuTestPage.dispose();
@@ -498,6 +509,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                       ButtonSegment(value: 2, label: Text('选集')),
                       ButtonSegment(value: 3, label: Text('高级')),
                       ButtonSegment(value: 4, label: Text('弹幕')),
+                      ButtonSegment(value: 5, label: Text('播放')),
                     ],
                     onChanged: (value) => setState(() => _section = value),
                   ),
@@ -550,6 +562,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
   }
 
   Widget _buildCurrentSection() {
+    if (_section == 5) return _buildPlaybackSection();
     if (_section == 4) return _buildDanmakuSection();
     if (_section == 3) return _buildAdvancedOptionsCard();
     final isSearch = _section == 1;
@@ -690,6 +703,81 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
           onPressed: _testingDanmaku ? null : _testDanmaku,
           icon: _testingDanmaku ? const LoadingIndicator(size: 20) : const Icon(Icons.science_outlined),
           label: Text(_testingDanmaku ? '测试中' : '测试弹幕'),
+        ),
+      ],
+    ),
+  );
+
+  PlaybackRuleConfig? _buildPlaybackConfig() {
+    if (_playbackJson.text.trim().isEmpty) return null;
+    final json = jsonDecode(_playbackJson.text);
+    if (json is! Map) throw const FormatException('播放配置必须是 JSON 对象');
+    final config = PlaybackRuleConfig.fromJson(Map<String, dynamic>.from(json));
+    RulePlaybackService.validate(config);
+    return config;
+  }
+
+  Future<void> _testPlayback() async {
+    setState(() {
+      _testingPlayback = true;
+      _playbackTestResult = null;
+    });
+    final cancel = _playbackTestCancel = CancelToken();
+    try {
+      final config = _buildPlaybackConfig();
+      if (config == null || !config.enabled) {
+        throw const FormatException('请先启用播放解析配置');
+      }
+      final source = await RulePlaybackService.resolve(
+        config: config,
+        pageUrl: _playbackTestPage.text.trim(),
+        pluginName: widget.plugin.name,
+        httpHeaders: {
+          if (userAgentController.text.trim().isNotEmpty)
+            'user-agent': userAgentController.text.trim(),
+          if (refererController.text.trim().isNotEmpty)
+            'referer': refererController.text.trim(),
+        },
+        cancelToken: cancel,
+      );
+      if (mounted) {
+        setState(
+          () => _playbackTestResult =
+              '已解析视频：${source.url}\n${source.audioUrl == null ? '音视频共用一个地址' : '独立音频：${source.audioUrl}'}\n地址解析成功不代表媒体已通过播放验证。',
+        );
+      }
+    } catch (error) {
+      if (mounted) setState(() => _playbackTestResult = '测试失败：$error');
+    } finally {
+      if (mounted) setState(() => _testingPlayback = false);
+    }
+  }
+
+  Widget _buildPlaybackSection() => RuleSection(
+    title: '播放解析',
+    description: '从站点接口解析媒体地址，可分别配置视频与音频。留空时使用网页解析。',
+    icon: Icons.video_settings_rounded,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextButton(
+          onPressed: () => setState(() => _playbackJson.clear()),
+          child: const Text('清空配置'),
+        ),
+        EditorTextField(
+          controller: _playbackJson,
+          label: '播放规则（JSON）',
+          maxLines: 22,
+          helper: 'steps 配置请求；video/audio 映射媒体列表和地址。仅支持无需 DRM 的 HTTP/HTTPS 媒体。',
+        ),
+        EditorTextField(controller: _playbackTestPage, label: '测试播放页 URL'),
+        if (_playbackTestResult != null) Text(_playbackTestResult!),
+        FilledButton.tonalIcon(
+          onPressed: _testingPlayback ? null : _testPlayback,
+          icon: _testingPlayback
+              ? const LoadingIndicator(size: 20)
+              : const Icon(Icons.science_outlined),
+          label: Text(_testingPlayback ? '测试中' : '测试播放解析'),
         ),
       ],
     ),
@@ -1080,8 +1168,9 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
     final searchConfig = _buildSearchApiConfig();
     final chapterConfig = _buildChapterApiConfig();
     final danmakuConfig = _buildDanmakuConfig();
+    final playbackConfig = _buildPlaybackConfig();
     return Plugin(
-      api: searchMode == RuleMode.api || chapterMode == RuleMode.api || danmakuConfig != null
+      api: searchMode == RuleMode.api || chapterMode == RuleMode.api || danmakuConfig != null || playbackConfig != null
           ? ApiEndpoints.apiLevel.toString()
           : _api,
       type: _type,
@@ -1107,6 +1196,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
       searchApiConfig: searchConfig,
       chapterApiConfig: chapterConfig,
       danmakuConfig: danmakuConfig,
+      playbackConfig: playbackConfig,
       antiCrawlerConfig: AntiCrawlerConfig(
         enabled: antiCrawlerEnabled,
         captchaType: captchaType,

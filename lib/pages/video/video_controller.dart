@@ -619,11 +619,15 @@ abstract class _VideoPageController with Store implements Disposable {
         url,
         useLegacyParser: currentPlugin.useLegacyParser,
         userAgent: PluginCookieManager.instance.userAgentFor(currentPlugin.name),
+        playbackConfig: currentPlugin.playbackConfig,
+        pluginName: currentPlugin.name,
+        httpHeaders: currentPlugin.buildHttpHeaders(),
+        episodeNumber: resolvedEpisode.danmakuEpisodeNumber,
         offset: offset,
       );
 
       if (session.isStale) return;
-      final httpHeaders = await PluginCookieManager.instance.headersFor(
+      final httpHeaders = source.httpHeaders.isNotEmpty ? source.httpHeaders : await PluginCookieManager.instance.headersFor(
           currentPlugin.name, source.url, currentPlugin.buildHttpHeaders());
       if (session.isStale) {
         return;
@@ -640,6 +644,8 @@ abstract class _VideoPageController with Store implements Disposable {
         offset: source.offset,
         isLocalPlayback: false,
         videoSourceFormat: source.format,
+        audioUrl: source.audioUrl,
+        audioHttpHeaders: source.audioHttpHeaders,
         bangumiId: bangumiItem.id,
         pluginName: currentPlugin.name,
         episode: resolvedEpisode.listIndex,
@@ -666,6 +672,7 @@ abstract class _VideoPageController with Store implements Disposable {
         );
         unawaited(_loadPlaybackDanmaku(playerController, params, session));
       } else if (session.isActive) {
+        _failLoading('播放器初始化失败，请检查视频、音频地址及登录状态');
         _playbackSessions.cancel();
       }
     } on VideoSourceTimeoutException {

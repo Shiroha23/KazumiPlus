@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
+import 'package:kazumi/plugins/playback_rule_config.dart';
+import 'package:kazumi/services/video_source/rule_playback_service.dart';
 
 import 'package:kazumi/webview/video/video_webview_controller.dart';
 import 'package:kazumi/services/video_source/video_source_service.dart';
 
 /// WebView 视频源解析服务
 ///
-/// 使用 WebView 解析视频页面，提取视频源 URL。
+/// 优先执行可选的通用播放规则；未配置时使用 WebView 提取视频源 URL。
 /// WebView 实例在服务生命周期内复用，切换集数时调用 unloadPage 释放页面资源，
 /// 仅在 [dispose] 时才真正销毁 WebView。
 class WebViewVideoSourceService implements IVideoSourceService {
@@ -26,6 +29,10 @@ class WebViewVideoSourceService implements IVideoSourceService {
     String episodeUrl, {
     required bool useLegacyParser,
     String? userAgent,
+    PlaybackRuleConfig? playbackConfig,
+    String pluginName = '',
+    Map<String, String> httpHeaders = const {},
+    int episodeNumber = 1,
     int offset = 0,
     Duration timeout = const Duration(seconds: 15),
   }) async {
@@ -44,6 +51,10 @@ class WebViewVideoSourceService implements IVideoSourceService {
         episodeUrl,
         useLegacyParser: useLegacyParser,
         userAgent: userAgent,
+        playbackConfig: playbackConfig,
+        pluginName: pluginName,
+        httpHeaders: httpHeaders,
+        episodeNumber: episodeNumber,
         offset: offset,
         timeout: timeout,
       ),
@@ -58,10 +69,42 @@ class WebViewVideoSourceService implements IVideoSourceService {
     String episodeUrl, {
     required bool useLegacyParser,
     String? userAgent,
+    PlaybackRuleConfig? playbackConfig,
+    String pluginName = '',
+    Map<String, String> httpHeaders = const {},
+    int episodeNumber = 1,
     required int offset,
     required Duration timeout,
   }) async {
     request.throwIfNotCurrent(_activeRequest);
+
+    if (playbackConfig?.enabled == true) {
+      try {
+        final source =
+            await RulePlaybackService.resolve(
+              config: playbackConfig!,
+              pageUrl: episodeUrl,
+              pluginName: pluginName,
+              httpHeaders: httpHeaders,
+              episodeNumber: episodeNumber,
+              offset: offset,
+              cancelToken: request.token,
+            ).timeout(
+              timeout,
+              onTimeout: () {
+                request.token.cancel();
+                throw VideoSourceTimeoutException(timeout);
+              },
+            );
+        request.throwIfNotCurrent(_activeRequest);
+        return source;
+      } catch (_) {
+        request.throwIfNotCurrent(_activeRequest);
+        rethrow;
+      } finally {
+        if (identical(_activeRequest, request)) _activeRequest = null;
+      }
+    }
 
     if (_webview == null) {
       _webview = VideoWebviewControllerFactory.getController();
@@ -80,11 +123,7 @@ class WebViewVideoSourceService implements IVideoSourceService {
       await _webview!.setUserAgent(userAgent);
       request.throwIfNotCurrent(_activeRequest);
       didStartLoad = true;
-      await _webview!.loadUrl(
-        episodeUrl,
-        useLegacyParser,
-        offset: offset,
-      );
+      await _webview!.loadUrl(episodeUrl, useLegacyParser, offset: offset);
 
       request.throwIfNotCurrent(_activeRequest);
 
@@ -148,10 +187,12 @@ class WebViewVideoSourceService implements IVideoSourceService {
 
 class _ResolveRequest {
   final Completer<void> _cancelled = Completer<void>();
+  final CancelToken token = CancelToken();
 
   Future<void> get cancelled => _cancelled.future;
 
   void cancel() {
+    token.cancel();
     if (!_cancelled.isCompleted) {
       _cancelled.complete();
     }

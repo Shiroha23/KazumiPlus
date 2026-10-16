@@ -3,6 +3,8 @@ import 'package:kazumi/plugins/danmaku_rule_config.dart';
 
 class PlaybackInitParams {
   final String videoUrl;
+  final String? audioUrl;
+  final Map<String, String> audioHttpHeaders;
   final int offset;
   final bool isLocalPlayback;
   final VideoSourceFormat videoSourceFormat;
@@ -25,6 +27,8 @@ class PlaybackInitParams {
 
   const PlaybackInitParams({
     required this.videoUrl,
+    this.audioUrl,
+    this.audioHttpHeaders = const {},
     required this.offset,
     required this.isLocalPlayback,
     required this.bangumiId,
