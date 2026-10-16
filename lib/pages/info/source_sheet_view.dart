@@ -44,6 +44,7 @@ class _SourceSheetView extends StatefulWidget {
     required this.onOpenBrowser,
     required this.onPlay,
     required this.onClose,
+    this.selectOnly = false,
   });
 
   final String keyword;
@@ -57,6 +58,7 @@ class _SourceSheetView extends StatefulWidget {
   final ValueChanged<String> onOpenBrowser;
   final void Function(String sourceName, SearchItem result) onPlay;
   final VoidCallback onClose;
+  final bool selectOnly;
 
   @override
   State<_SourceSheetView> createState() => _SourceSheetViewState();
@@ -404,7 +406,7 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
       onTap: () => widget.onPlay(group.name, result),
       child: Semantics(
         button: true,
-        label: '播放 ${result.name}，来源 ${group.name}',
+        label: '${widget.selectOnly ? '选择' : '播放'} ${result.name}，来源 ${group.name}',
         excludeSemantics: true,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 64),
@@ -419,7 +421,9 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
                       )),
                 ),
                 const SizedBox(width: 16),
-                Icon(Icons.play_arrow_rounded,
+                Icon(widget.selectOnly
+                    ? Icons.chevron_right_rounded
+                    : Icons.play_arrow_rounded,
                     color: theme.colorScheme.primary),
               ],
             ),

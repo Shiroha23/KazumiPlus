@@ -19,12 +19,23 @@ class OnlineVideoPlaybackArgs extends VideoPlaybackArgs {
     required this.title,
     required this.src,
     required this.roads,
+    this.initialEpisode,
+    this.initialRoad = 0,
   });
 
   final Plugin plugin;
   final String title;
   final String src;
   final List<Road> roads;
+  final int? initialEpisode;
+  final int initialRoad;
+
+  bool get hasInitialSelection =>
+      initialEpisode != null &&
+      initialRoad >= 0 &&
+      initialRoad < roads.length &&
+      initialEpisode! > 0 &&
+      initialEpisode! <= roads[initialRoad].data.length;
 }
 
 class OfflineVideoPlaybackArgs extends VideoPlaybackArgs {

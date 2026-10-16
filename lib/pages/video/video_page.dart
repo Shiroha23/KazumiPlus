@@ -167,7 +167,10 @@ class _VideoPageState extends State<VideoPage>
     var progress = historyController.lastWatching(
         videoPageController.bangumiItem,
         videoPageController.currentPlugin.name);
-    if (progress != null) {
+    final args = widget.args;
+    final hasInitialSelection =
+        args is OnlineVideoPlaybackArgs && args.hasInitialSelection;
+    if (progress != null && !hasInitialSelection) {
       if (videoPageController.roadList.length > progress.road) {
         if (videoPageController.roadList[progress.road].data.length >=
             progress.episode) {

@@ -41,6 +41,7 @@ class InfoTabView extends StatefulWidget {
     required this.staffList,
     required this.relationList,
     required this.isLoading,
+    required this.episodesView,
   });
 
   final bool commentsQueryTimeout;
@@ -65,6 +66,7 @@ class InfoTabView extends StatefulWidget {
   final List<StaffFullItem> staffList;
   final List<BangumiRelation> relationList;
   final bool isLoading;
+  final Widget episodesView;
 
   @override
   State<InfoTabView> createState() => _InfoTabViewState();
@@ -496,6 +498,7 @@ class _InfoTabViewState extends State<InfoTabView> {
             );
           },
         ),
+        widget.episodesView,
         InfoCommentsView(
           interest: widget.bangumiItem.interest,
           comments: widget.commentsList,

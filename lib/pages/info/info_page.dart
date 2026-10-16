@@ -16,10 +16,12 @@ import 'package:kazumi/bean/widget/embedded_native_control_area.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/pages/info/info_actions_menu.dart';
 import 'package:kazumi/pages/info/info_controller.dart';
+import 'package:kazumi/pages/info/info_episodes_view.dart';
 import 'package:kazumi/pages/info/info_tabview.dart';
 import 'package:kazumi/pages/info/rating_review_dialog.dart';
 import 'package:kazumi/pages/info/source_sheet.dart';
 import 'package:kazumi/plugins/plugins_controller.dart';
+import 'package:kazumi/pages/video/video_playback_args.dart';
 import 'package:kazumi/services/player/default_plugin_playback.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart'
     show RuleCancelToken;
@@ -48,6 +50,7 @@ class _InfoPageState extends State<InfoPage>
     with SingleTickerProviderStateMixin, KazumiDialogOwner {
   static const List<String> _infoTabs = <String>[
     '概览',
+    '选集',
     '吐槽',
     '角色',
     '关联',
@@ -226,21 +229,22 @@ class _InfoPageState extends State<InfoPage>
   }
 
   void onInfoTabChanged() {
+    setState(() {});
     final index = infoTabController.index;
-    if (index == 1) {
+    if (index == 2) {
       onCommentsTabSelected();
     }
-    if (index == 2 &&
+    if (index == 3 &&
         infoController.characterList.isEmpty &&
         !charactersIsLoading &&
         !charactersIsEmpty &&
         !charactersQueryTimeout) {
       loadCharacters();
     }
-    if (index == 3 && infoController.canLoadRelations) {
+    if (index == 4 && infoController.canLoadRelations) {
       loadRelations();
     }
-    if (index == 4 &&
+    if (index == 5 &&
         infoController.staffList.isEmpty &&
         !staffIsLoading &&
         !staffIsEmpty &&
@@ -354,6 +358,21 @@ class _InfoPageState extends State<InfoPage>
       context: context,
       maxHeightFactor: 0.88,
       builder: (_) => SourceSheet(infoController: infoController),
+    );
+  }
+
+  Future<OnlineVideoPlaybackArgs?> _chooseEpisodeSource() async {
+    if (widget.pluginsController.pluginList.isEmpty) {
+      KazumiDialog.showToast(message: '还没有规则，请先添加规则');
+      return null;
+    }
+    return showAdaptiveBottomSheet<OnlineVideoPlaybackArgs>(
+      context: context,
+      maxHeightFactor: 0.88,
+      builder: (_) => SourceSheet(
+        infoController: infoController,
+        selectOnly: true,
+      ),
     );
   }
 
@@ -502,15 +521,24 @@ class _InfoPageState extends State<InfoPage>
             relationsHasLoaded: infoController.relationsHasLoaded,
             loadRelations: loadRelations,
             isLoading: showBangumiInfoSkeleton,
+            episodesView: InfoEpisodesView(
+              bangumiItem: infoController.bangumiItem,
+              defaultPlugin: widget.pluginsController.defaultPlugin,
+              isActive: infoTabController.index == 1,
+              onChooseSource: _chooseEpisodeSource,
+              onPlay: (args) => context.pushNamed('/video/', arguments: args),
+            ),
           );
         }),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        tooltip: '开始观看',
-        onPressed: _startWatching,
-        label: const Text('开始观看'),
-        icon: const Icon(Icons.play_arrow_rounded),
-      ),
+      floatingActionButton: infoTabController.index == 1
+          ? null
+          : FloatingActionButton.extended(
+              tooltip: '开始观看',
+              onPressed: _startWatching,
+              label: const Text('开始观看'),
+              icon: const Icon(Icons.play_arrow_rounded),
+            ),
     );
   }
 }

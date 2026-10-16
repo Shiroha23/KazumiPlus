@@ -35,9 +35,14 @@ part 'source_captcha_flow.dart';
 part 'source_sheet_view.dart';
 
 class SourceSheet extends StatefulWidget {
-  const SourceSheet({super.key, required this.infoController});
+  const SourceSheet({
+    super.key,
+    required this.infoController,
+    this.selectOnly = false,
+  });
 
   final InfoController infoController;
+  final bool selectOnly;
 
   @override
   State<SourceSheet> createState() => _SourceSheetState();
@@ -139,16 +144,20 @@ class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
             plugin.queryChapterRoads(searchItem.src, cancelToken: cancelToken),
       );
       if (roads.isEmpty) throw ChapterErrorException(plugin.name);
-      task.withContext((context) => context.pushNamed(
-            '/video/',
-            arguments: OnlineVideoPlaybackArgs(
-              bangumiItem: widget.infoController.bangumiItem,
-              plugin: plugin,
-              title: searchItem.name,
-              src: searchItem.src,
-              roads: roads,
-            ),
-          ));
+      final args = OnlineVideoPlaybackArgs(
+        bangumiItem: widget.infoController.bangumiItem,
+        plugin: plugin,
+        title: searchItem.name,
+        src: searchItem.src,
+        roads: roads,
+      );
+      task.withContext((context) {
+        if (widget.selectOnly) {
+          Navigator.of(context).pop(args);
+        } else {
+          context.pushNamed('/video/', arguments: args);
+        }
+      });
     }, onError: (error, stackTrace) {
       KazumiLogger().w('SourceSheet: failed to query playlist', error: error);
       KazumiDialog.showToast(message: '未能获取播放列表，请重试或选择其他结果');
@@ -211,6 +220,7 @@ class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
             if (group.hasResults) firstResultSource ??= group.name;
           }
           return _SourceSheetView(
+            selectOnly: widget.selectOnly,
             keyword: _keyword,
             groups: groupsByName.values.toList(),
             firstResultSource: firstResultSource,
