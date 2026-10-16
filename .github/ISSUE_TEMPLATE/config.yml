@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Telegram 群组
-    url: https://t.me/kazumi_app
-    about: 如果你需要讨论和帮助，也可以加入 Telegram 群组。
+  - name: KazumiPlus 使用说明
+    url: https://github.com/Shiroha23/KazumiPlus#readme
+    about: 提交问题前，请先查看使用说明与常见问题。

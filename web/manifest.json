@@ -1,11 +1,11 @@
 {
-    "name": "kazumi",
-    "short_name": "kazumi",
+    "name": "KazumiPlus",
+    "short_name": "KazumiPlus",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "KazumiPlus anime client with custom rules and danmaku support.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

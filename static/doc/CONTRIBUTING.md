@@ -18,8 +18,8 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/Predidit/Kazumi.git
-cd Kazumi
+git clone https://github.com/Shiroha23/KazumiPlus.git
+cd KazumiPlus
 
 # 检查 Flutter SDK 状态并下载相关包
 flutter doctor -v
@@ -53,6 +53,14 @@ flutter run --dart-define-from-file=.kazumi_build_defines.env
 ```
 
 VS Code 可选择名称带有 `local defines` 的启动配置。本地凭据文件已加入 `.gitignore`；CI 使用同名 Secrets。凭据在编译时注入，修改后需要停止应用并重新运行。未配置时弹弹play弹幕加载和手动检索不可用，已配置的网站弹幕规则不受影响。网站弹幕的配置方式见[网站弹幕规则](DANMAKU_RULES.md)。
+
+## 发布与兼容性
+
+### Windows 发布签名
+
+Windows 发布包使用 KazumiPlus 名称，MSIX 默认发布者为 `CN=Shiroha23`。发布工作流仅在配置 `SIGNPATH_API_TOKEN` Secret 和 `SIGNPATH_ORGANIZATION_ID` 仓库变量时调用本分支的 SignPath 项目 `KazumiPlus`；签名项目、策略、产物配置和证书发布者需与本仓库匹配。未配置时保留未签名产物，ZIP 可解压运行，MSIX 需自行签名后安装。
+
+为兼容已有安装，本次品牌调整保留 Dart 包名、平台应用标识、本地数据标识与 `kazumi://` 规则协议。Windows 资源中的内部产品名也用于定位历史数据目录，修改时需一并考虑数据迁移。
 
 ## 代码质量
 

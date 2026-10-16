@@ -10,7 +10,6 @@ import 'package:kazumi/utils/crypto.dart';
 String getUpdateDownloadUrlFromAsset(
     Map<String, dynamic>? asset, UpdateDownloadSource source) {
   final url = asset?[switch (source) {
-    UpdateDownloadSource.mirror => 'mirror_download_url',
     UpdateDownloadSource.github => 'browser_download_url',
   }];
   return url is String ? url.trim() : '';
@@ -125,7 +124,7 @@ Future<String> downloadUpdateFile({
   }
 
   checkCancelled();
-  final downloadDir = await file.parent.createTemp('kazumi-update-');
+  final downloadDir = await file.parent.createTemp('kazumiplus-update-');
   try {
     final partial = File('${downloadDir.path}/download.part');
     await DownloadHttpClient.instance.download(

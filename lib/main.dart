@@ -92,7 +92,7 @@ void main() async {
           ? TitleBarStyle.hidden
           : TitleBarStyle.normal,
       windowButtonVisibility: showWindowButton,
-      title: 'Kazumi',
+      title: 'KazumiPlus',
     );
     // Finish native frame setup before runApp can sync the saved material.
     // setTitleBarStyle resets DWM's glass margins, so running it concurrently

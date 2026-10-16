@@ -39,8 +39,8 @@ class AboutPage extends StatelessWidget {
                     ),
                     AboutLinkTile(
                       icon: Icons.forum_rounded,
-                      title: 'Telegram',
-                      url: ApiEndpoints.telegramGroup,
+                      title: '上游 Kazumi',
+                      url: ApiEndpoints.upstreamUrl,
                     ),
                   ],
                 ),
@@ -112,7 +112,7 @@ class _ProjectHeader extends StatelessWidget {
           Semantics(
             header: true,
             child: Text(
-              'Kazumi',
+              'KazumiPlus',
               style: theme.textTheme.displayMedium?.copyWith(
                 color: colors.primary,
                 fontWeight: FontWeight.w600,
@@ -128,7 +128,7 @@ class _ProjectHeader extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            '基于自定义规则的开源番剧应用',
+            '基于 Kazumi 的自定义规则番剧应用',
             style: theme.textTheme.bodyLarge,
           ),
           const SizedBox(height: 20),

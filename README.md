@@ -1,224 +1,202 @@
-<div align=center>
+<div align="center">
 
-<h1>Kazumi</h1>
+<img src="assets/images/logo/logo_rounded.png" alt="KazumiPlus 图标" width="160">
 
-<img src="assets/images/logo/logo_rounded.png" width=200></img>
+# KazumiPlus
 
-<a href="https://t.me/kazumi_app"><img src="https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white"></img></a>
+基于 Kazumi 的番剧客户端，持续打磨界面、桌面体验与规则扩展能力。
 
-<img src="https://img.shields.io/badge/Flutter-03A9F4?style=for-the-badge&logo=flutter&logoColor=white"></img>
-<img src="https://img.shields.io/badge/Dart-00B4AB?style=for-the-badge&logo=Dart&logoColor=white"></img>
+[![Flutter](https://img.shields.io/badge/Flutter-02569B?logo=flutter&logoColor=white)](https://flutter.dev/)
+[![Dart](https://img.shields.io/badge/Dart-0175C2?logo=dart&logoColor=white)](https://dart.dev/)
+[![License](https://img.shields.io/badge/License-GPL--3.0-blue)](LICENSE)
 
-<a href="https://trendshift.io/repositories/11432"><img src="https://trendshift.io/api/badge/trendshift/repositories/11432/yearly?language=Dart"></img></a>
-<a href="https://hellogithub.com/repository/Predidit/Kazumi" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=68d824ea55ee4b07aba6fe1dd61ac939&claim_uid=J9Qu6aDd8LT1nU0"/></img></a>
+[下载](https://github.com/Shiroha23/KazumiPlus/releases) · [反馈问题](https://github.com/Shiroha23/KazumiPlus/issues) · [上游项目](https://github.com/Predidit/Kazumi) · [网站弹幕规则](static/doc/DANMAKU_RULES.md)
 
-<p>使用 Flutter 开发的基于自定义规则的番剧采集与在线观看程序。使用最多五行基于 <code>Xpath</code> 语法的选择器构建自己的规则。支持规则导入与规则分享。支持基于 <code>Anime4K</code> 的实时超分辨率。绝赞开发中 (～￣▽￣)～</p>
 </div>
 
-## 支持平台
+## 关于项目
 
-- Android 10 及以上
-- Windows 10 及以上
-- MacOS 10.15 及以上
-- Linux (实验性)
-- iOS 13 及以上 (需要 [侧载](https://kazumi.app/docs/misc/how-to-install-in-ios))
-- HarmonyOS 5.0 及以上 (位于 [分支仓库](https://github.com/ErBWs/Kazumi/releases/latest)，需要 [侧载](https://kazumi.app/docs/misc/how-to-install-in-ohos))
+KazumiPlus 是 [Kazumi](https://github.com/Predidit/Kazumi) 的衍生分支，使用 Flutter 开发，保留基于自定义规则的番剧检索、播放、弹幕、下载与同步能力，并在此基础上调整界面与交互，扩展视频源的适配方式。
 
-## 屏幕截图
+本分支独立维护，功能与发布节奏可能与上游不同。感谢 Kazumi 作者与所有贡献者提供的基础。
 
-<table>
-  <tr>
-    <td><img alt="homepage" src="static/screenshot/img_1.png"></td>
-    <td><img alt="timetable" src="static/screenshot/img_2.png"></td>
-    <td><img alt="details" src="static/screenshot/img_3.png"></td>
-  <tr>
-  <tr>
-    <td><img alt="selection-page" src="static/screenshot/img_4.png"></td>
-    <td><img alt="rules-mange" src="static/screenshot/img_5.png"></td>
-    <td><img alt="rules-edit" src="static/screenshot/img_6.png"></td>
-  <tr>
-</table>
+## KazumiPlus 的改进
 
-## 功能 / 开发计划
+- **界面与交互**：统一热门与搜索页面的海报网格，调整热门页顶栏，改善各页面滚动体验、窗口缩放时的图片复用与桌面窗口启动显示。
+- **桌面窗口材质**：Windows 支持亚克力、Mica、Mica Alt 和透明效果，macOS 支持原生毛玻璃；可调节背景浓度，并随主题切换与全屏退出恢复效果。可用选项取决于系统版本。
+- **视频源网站登录**：可在应用内打开视频源网站完成登录，保存并复用登录状态；支持从规则管理、视频源检索及播放失败页面进入。
+- **可配置的网站弹幕**：规则编辑器支持 JSON、DPlayer 与 Bilibili XML 格式，支持预请求提取分集 ID、字段映射、播放页测试，以及随视频下载缓存弹幕。配置可随规则导入、导出和分享，详见[网站弹幕规则](static/doc/DANMAKU_RULES.md)。
 
-- [X]  规则编辑器
-- [X]  番剧目录
-- [X]  番剧搜索
-- [X]  番剧时间表
-- [X]  番剧字幕
-- [X]  分集播放
-- [X]  视频播放器
-- [X]  多视频源支持
-- [X]  视频源网站登录
-- [X]  规则分享
-- [X]  硬件加速
-- [X]  高刷适配
-- [X]  追番列表
-- [X]  番剧弹幕
-- [X]  在线更新
-- [X]  历史记录
-- [X]  倍速播放
-- [X]  配色方案
-- [X]  桌面窗口材质（Windows 亚克力 / Mica、macOS 毛玻璃）
-- [X]  跨设备同步
-- [X]  无线投屏 (DLNA)
-- [X]  外部播放器播放
-- [X]  超分辨率
-- [X]  一起看
-- [X]  番剧下载
-- [ ]  番剧更新提醒
-- [ ]  还有更多 (/・ω・＼)
+## 主要功能
 
-## 下载
+| 类别 | 功能 |
+| --- | --- |
+| 番剧发现 | 热门番剧、搜索与筛选、时间表、详情与评论、图片识别番剧 |
+| 自定义规则 | XPath 与 API 规则、规则编辑与测试、导入导出、规则仓库、多视频源切换 |
+| 视频播放 | 硬件解码、倍速、字幕、播放进度记录、截图与导出、外部播放器 |
+| 弹幕 | 弹弹play、网站弹幕、屏蔽规则、时间偏移、简繁转换 |
+| 下载 | 分集下载、下载管理、离线播放、弹幕缓存 |
+| 收藏与同步 | 本地追番与历史记录、Bangumi 收藏同步、WebDAV 收藏／历史／弹幕屏蔽规则同步 |
+| 一起观看 | DLNA 投屏、基于 Syncplay 的一起看 |
+| 画面与外观 | Anime4K 实时超分辨率、深浅色主题、动态配色、桌面窗口材质 |
+| 网络设置 | 番剧条目镜像／ECH／直连、图片加速、规则仓库镜像、代理配置 |
 
-通过本页面 [Releases](https://github.com/Predidit/Kazumi/releases/latest) 选项卡下载：
+具体能力受平台、设备性能和视频源支持情况影响。
 
-<a href="https://github.com/Predidit/Kazumi/releases">
-  <img src="static/svg/get_it_on_github.svg" alt="Get it on Github" width="200"/>
-</a>
+## 下载与平台
 
-### Android
+请从 **[KazumiPlus Releases](https://github.com/Shiroha23/KazumiPlus/releases)** 获取本分支发布的安装包，可用平台与架构以实际发布附件为准。没有对应安装包时，可参考下方说明从源码构建。
 
-<a href="https://f-droid.org/packages/com.predidit.kazumi">
-  <img src="https://fdroid.gitlab.io/artwork/badge/get-it-on-zh-hans.svg"
-  alt="Get it on F-Droid" width="200">
-</a>
+项目沿用 Kazumi 的跨平台工程：
 
-### GNU/Linux
+| 平台 | 基础要求与说明 |
+| --- | --- |
+| Android | Android 10 及以上 |
+| Windows | Windows 10 及以上；窗口材质按系统版本提供 |
+| macOS | macOS 10.15 及以上 |
+| Linux | 实验性支持，运行依赖与桌面集成因发行版而异 |
+| iOS | iOS 13 及以上，需要自行签名或侧载 |
 
-<a href="https://flathub.org/apps/io.github.Predidit.Kazumi">
-  <img src="https://flathub.org/api/badge?svg&locale=zh-Hans" alt="Get it on Flathub" width="175"/>
-</a>
+上表沿用上游标注的系统基线，不代表本分支已在所有平台完成验证；实际兼容性以构建产物和设备测试为准。
 
-#### Arch Linux
+应用内更新从本仓库 GitHub Releases 检查和下载。上游的 F-Droid、Flathub、AUR 等渠道分发的是 Kazumi。
 
-可以从 [AUR](http://aur.archlinux.org) 安装。
+Windows ZIP 可解压运行。发布流程未配置本分支的签名服务时，MSIX 产物未签名，需要自行签名后安装。
 
-##### AUR
+## 开始使用
+
+1. 首次启动时完成引导，根据网络情况选择访问加速方式。
+2. 在引导页添加番剧来源，或进入「规则管理」从规则仓库安装、导入或自行编写规则。项目不再内置默认规则，播放前需要至少一条可用规则。
+3. 搜索或浏览番剧，打开详情页，选择视频源、线路和集数开始播放。
+4. 按需配置弹幕、下载、追番与同步；需要跨设备同步时，在同步设置中连接 Bangumi 或 WebDAV。
+
+规则仅描述第三方站点的检索与解析方式。规则失效时，可先更新规则，再检查来源站点是否可正常访问。
+
+## 常见问题
+
+<details>
+<summary>如何开启窗口毛玻璃或 Mica？</summary>
+
+在「设置 → 外观设置 → 窗口」中选择「窗口效果」，可同时调节背景浓度。此功能默认关闭，Windows 按系统版本显示可用选项，macOS 提供原生毛玻璃。
+
+</details>
+
+<details>
+<summary>视频源需要登录后才能播放怎么办？</summary>
+
+在规则管理中打开对应规则的更多菜单，选择「网站登录」，完成登录后点击「保存并返回」。也可以从视频源检索菜单或播放失败页面进入，返回后会自动重试。
+
+如网站提供「记住登录」选项，可勾选以便下次使用。登录有效期由网站决定；退出账号需要重新进入「网站登录」并在网站内操作。
+
+</details>
+
+<details>
+<summary>如何使用网站自带的弹幕？</summary>
+
+在「规则编辑器 → 弹幕」中按来源网站的实际接口填写配置，并使用播放页地址测试。配置方法和示例见[网站弹幕规则](static/doc/DANMAKU_RULES.md)。
+
+未启用网站弹幕配置的规则使用弹弹play。启用后，空列表表示该集暂无网站弹幕，请求或解析失败会报告规则错误。开启「下载弹幕」后，网站弹幕也会缓存以供离线播放。
+
+</details>
+
+<details>
+<summary>封面或番剧信息加载失败怎么办？</summary>
+
+在「设置 → 网络设置」中调整「番剧条目加速」「图片加速」或「规则仓库镜像」，也可按需配置代理。这些选项用于不同类型的请求，视频能否播放还取决于所选来源网站。
+
+</details>
+
+<details>
+<summary>开启超分辨率后卡顿，或播放时内存占用较高？</summary>
+
+Anime4K 对 GPU 性能有一定要求，可尝试效率档、用于较低分辨率的视频，或关闭超分辨率。播放缓存会占用内存，内存紧张时可在播放设置中调整低内存模式。
+
+</details>
+
+<details>
+<summary>为什么视频中有广告，或外部播放器无法播放？</summary>
+
+视频中的广告可能来自来源站点，可尝试切换视频源。部分来源需要特定请求头、Cookie 或其他播放条件，外部播放器未必能够复用这些信息。
+
+</details>
+
+## 从源码构建
+
+Flutter 版本以 [pubspec.yaml](pubspec.yaml) 中的 `environment.flutter` 为准，当前为 **3.47.7**，Dart SDK 约束为 `>=3.10.0 <4.0.0`。还需安装目标平台的开发工具链，并确保可以获取 Flutter、pub.dev、GitHub 和相关原生依赖。
 
 ```bash
-[yay/paru] -S kazumi # 从源码构建
-[yay/paru] -S kazumi-bin # 二进制包
+git clone https://github.com/Shiroha23/KazumiPlus.git
+cd KazumiPlus
+
+flutter doctor -v
+flutter pub get
+flutter run
 ```
 
-## 贡献
+### 弹幕凭据
 
-欢迎向我们的 [规则仓库](https://github.com/Predidit/KazumiRules) 提交您的自定义规则。您可以自由选择是否在规则中留下您的ID。详细的规则编写教程可以参考 [规则开发文档](https://kazumi.app/docs/rules/develop-rules)
+自行构建时，弹弹play在线弹幕需要为自己的应用申请 AppId 和 AppSecret。复制根目录的凭据模板，例如在 PowerShell 中执行：
 
-## Q&A
+```powershell
+Copy-Item .kazumi_build_defines.env.example .kazumi_build_defines.env
+```
 
-<details>
-<summary>使用者 Q&A</summary>
+在 `.kazumi_build_defines.env` 中填写 `DANDANAPI_APPID` 和 `DANDANAPI_KEY`，然后运行：
 
-#### Q: 如何开启窗口毛玻璃或 Mica 效果？
+```bash
+flutter run --dart-define-from-file=.kazumi_build_defines.env
+```
 
-A: 在「设置 → 外观设置 → 窗口」选择「窗口效果」，即时生效并记住设置，支持调节背景浓度。Windows 按系统版本提供可用的亚克力、Mica、Mica Alt 和透明选项；macOS 提供原生毛玻璃。此选项默认关闭。
+未配置时，弹弹play弹幕加载与手动检索不可用，已配置的网站弹幕规则不受影响。可选的 `KAZUMI_APPID`、`KAZUMI_KEY` 用于 Kazumi 镜像凭据；留空时搜索使用官方接口。
 
-#### Q: 视频源网站需要登录后才能播放，应该怎么操作？
+本地凭据文件已加入 `.gitignore`，请勿提交凭据。修改后需要停止应用并重新运行。
 
-A: 在规则管理中打开对应规则的更多菜单，选择「网站登录」，在网站内完成登录后点击「保存并返回」。也可以从视频源检索菜单或播放失败页面进入登录，返回后会自动重试。如网站提供「记住登录」选项，请勾选以便下次使用。登录状态保留在系统 WebView 中，退出账号请重新进入「网站登录」并在网站内操作。
+### 检查与打包
 
-#### Q: 可以从规则网站读取弹幕吗？
+```bash
+flutter test
+flutter analyze --no-fatal-infos --fatal-warnings
 
-A: 可以，在「规则编辑器 → 弹幕」中配置网站接口，支持 JSON、DPlayer 和 Bilibili XML、预请求提取分集 ID、字段映射及播放页测试。配置随规则导入导出，开启「下载弹幕」后也会缓存网站弹幕。各站点需按实际接口填写，详见[网站弹幕规则](static/doc/DANMAKU_RULES.md)。未配置网站弹幕的规则仍使用弹弹play。
+# 按目标平台选择命令，在对应系统与工具链下执行
+flutter build apk --release --dart-define-from-file=.kazumi_build_defines.env
+flutter build windows --release --dart-define-from-file=.kazumi_build_defines.env
+flutter build macos --release --dart-define-from-file=.kazumi_build_defines.env
+flutter build linux --release --dart-define-from-file=.kazumi_build_defines.env
+flutter build ios --release --no-codesign --dart-define-from-file=.kazumi_build_defines.env
+```
 
-#### Q: 为什么少数番剧中有广告？
+未签名的 iOS 构建产物仍需签名后才能安装。更多开发约定见[贡献指引](static/doc/CONTRIBUTING.md)，代码组织见[项目结构](static/doc/STRUCTURE.md)。
 
-A: 本项目未插入任何广告。广告来自视频源, 请不要相信广告中的任何内容, 并尽量选择没有广告的视频源观看。
+## 反馈与贡献
 
-#### Q: 为什么我启用超分辨率功能后播放卡顿？
+欢迎在 [Issues](https://github.com/Shiroha23/KazumiPlus/issues) 中提交问题与建议，或通过 Pull Request 参与改进。反馈时请附上系统与应用版本、复现步骤，以及必要的截图或脱敏日志。
 
-A: 超分辨率功能对 GPU 性能要求较高, 如果没有在高性能独立显卡上运行 Kazumi, 尽量选择效率档而非质量档。对低分辨率视频源而非高分辨率视频源使用超分也可以降低性能消耗。
+编写网站弹幕配置请参考[本地文档](static/doc/DANMAKU_RULES.md)。通用规则可参考上游 [KazumiRules](https://github.com/Predidit/KazumiRules)；本分支扩展字段的兼容性取决于接收端的规则 API 版本。
 
-#### Q: 为什么播放视频时内存占用较高？
+## 许可证与资源归属
 
-A: 本程序在视频播放时, 会尽可能多地缓存视频到内存, 以提供较好的观看体验。如果您的内存较为紧张, 可以在播放设置选项卡启用低内存模式, 这将限制缓存。
+代码沿用 [GNU GPL v3](LICENSE) 许可证，使用、修改和分发时请遵守许可证要求。软件按许可证约定提供，不作适用性或可靠性保证。
 
-#### Q: 为什么少数番剧无法通过外部播放器观看？
+- **图标**：来自 [Yuquanaaa](https://www.pixiv.net/users/66219277) 的 [Pixiv 作品](https://www.pixiv.net/artworks/116666979)。原项目声明已获得作者使用授权；图标版权仍属于原作者，不属于可随意使用的自由素材，使用、复制、修改或分发需取得相应授权。
+- **字体**：内嵌 MiSans 字体由 Xiaomi 开发，字体使用须遵循其自身授权条款。
+- **第三方组件**：各自遵循对应许可证；ECH 原生依赖声明见 [THIRD_PARTY_NOTICES](licenses/ech_http/THIRD_PARTY_NOTICES.md)，着色器许可见 [assets/shaders/LICENSE](assets/shaders/LICENSE)。
 
-A: 部分视频源的番剧使用了反盗链措施, 这可以被 Kazumi 解决, 但无法被外部播放器解决。
+番剧元数据、弹幕与视频内容来自相应第三方服务或用户配置的来源站点，相关内容权利归各自权利人所有。
 
-#### Q: 为什么下载的 Linux 版本缺少图标和托盘功能？
+## 隐私
 
-A: 使用 .deb 版本进行安装, tar.gz 版本仅为方便二次打包, 这一格式先天缺乏图标和托盘功能支持。
-
-</details>
-
-<details>
-<summary>规则编写者 Q&A</summary>
-
-#### Q: 为什么我的自定义规则无法实现检索？
-
-A: 目前我们对 `Xpath` 语法的支持并不完整, 我们目前只支持以 `//` 开头的选择器。建议参照我们给出的示例规则构建自定义规则。
-
-#### Q: 为什么我的自定义规则可以实现检索, 但不能实现观看？
-
-A: 尝试关闭自定义规则的使用内置播放器选项, 这将尝试使用 `webview` 进行播放, 提高兼容性。但在内置播放器可用时, 建议启用内置播放器, 以获得更加流畅并带有弹幕的观看体验。
-
-</details>
-
-<details>
-<summary>开发者 Q&A</summary>
-
-#### Q: 我在尝试自行编译该项目, 但编译没有成功。
-
-A: 本项目编译需要良好的网络环境, 除了由 Google 托管的 Flutter 相关依赖外, 本项目同样依赖托管在 MavenCentral/Github/SourceForge 上的资源。如果您位于中国大陆, 可能需要设置恰当的镜像地址。
-
-</details>
-
-## 开发
-
-欢迎您提交 PR！在开始之前, 请阅读 [贡献指引](static/doc/CONTRIBUTING.md) 以了解我们对 PR 和 AI 参与辅助开发的规定。
-
-## 美术资源
-
-本项目图标来自 [Yuquanaaa](https://www.pixiv.net/users/66219277) 发表在 [Pixiv](https://www.pixiv.net/artworks/116666979) 上的作品。
-
-此图标由其原作者 [Yuquanaaa](https://www.pixiv.net/users/66219277) 拥有版权。我们已获得原作者的授权和许可, 可以在本项目中使用这一图标。这一图标不是自由使用的, 未经原作者明确授权, 任何人不得擅自使用、复制、修改或分发这一图标。
-
-本项目内嵌字体为 [Mi Sans](https://hyperos.mi.com/font/zh/details/sc/) 字体, 由 [Xiaomi](https://www.mi.com/index.html) 开发和拥有版权。
-
-## 免责声明
-
-本项目基于 GNU 通用公共许可证第 3 版（GPL-3.0）授权。我们不对其适用性、可靠性或准确性作出任何明示或暗示的保证。在法律允许的最大范围内, 作者和贡献者不承担任何因使用本软件而产生的直接、间接、偶然、特殊或后果性的损害赔偿责任。
-
-使用本项目需遵守所在地法律法规, 不得进行任何侵犯第三方知识产权的行为。因使用本项目而产生的数据和缓存应在24小时内清除, 超出 24 小时的使用需获得相关权利人的授权。
-
-## 隐私政策
-
-我们不收集任何用户数据, 不使用任何遥测组件。
-
-## 代码签名策略
-
-提交者: [贡献者](https://github.com/Predidit/Kazumi/graphs/contributors)
-审阅者: [所有者](https://github.com/Predidit)
-
-## 赞助
-
-
-| ![signpath](https://signpath.org/assets/favicon-50x50.png)                                                                                                                      | Free code signing on Windows provided by[SignPath.io](https://about.signpath.io/), certficate by [SignPath Foundation](https://signpath.org/) |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| <img src="https://kilo.ai/favicon/favicon.svg" width="50">                                                                                                                      | **Automatic PR review provided by [Kilo Code](https://kilo.ai/), sponsored by the [Kilo OSS Program](https://kilo.ai/oss)**                   |
-| <a href="https://m.do.co/c/0062035db3e4"><img src="https://opensource.nyc3.cdn.digitaloceanspaces.com/attribution/assets/SVG/DO_Logo_icon_blue.svg" width="50" height="50"></a> | **Cloud infrastructure is supported by [DigitalOcean](https://m.do.co/c/0062035db3e4)**                                                       |
+项目不使用遥测组件。设置、收藏、历史记录及网站登录状态会保存在本地；启用 Bangumi 或 WebDAV 同步时，相应数据会发送至所连接的服务。检索、播放、弹幕、图片识别与更新检查等联网功能会请求对应第三方服务。
 
 ## 致谢
 
-特别感谢 [XpathSelector](https://github.com/simonkimi/xpath_selector) 这个优秀的项目是本项目的基石。
+- [Kazumi](https://github.com/Predidit/Kazumi) 及其[贡献者](https://github.com/Predidit/Kazumi/graphs/contributors)：本项目的上游与基础。
+- [Bangumi](https://bangumi.tv/)：番剧元数据与收藏服务。
+- [弹弹play](https://www.dandanplay.com/)：开放弹幕服务。
+- [XpathSelector](https://github.com/simonkimi/xpath_selector)：XPath 规则解析。
+- [media-kit](https://github.com/media-kit/media-kit) 与 [avbuild](https://github.com/wang-bin/avbuild)：跨平台媒体播放及相关底层支持。
+- [Anime4K](https://github.com/bloc97/Anime4K)：实时超分辨率。
+- [Syncplay](https://github.com/Syncplay/syncplay)：一起看协议与公共服务器。
+- [trace.moe](https://trace.moe/)：图片识别番剧。
+- [Hive](https://github.com/isar/hive) 与 [Hive CE](https://github.com/IO-Design-Team/hive_ce)：本地数据存储。
 
-特别感谢 [弹弹play](https://www.dandanplay.com/) 本项目使用了 弹弹play开放平台 以提供弹幕交互。
-
-特别感谢 [Bangumi](https://bangumi.tv/) 本项目使用了 Bangumi 开放 API 以提供番剧元数据。
-
-特别感谢 [Anime4K](https://github.com/bloc97/Anime4K) 本项目使用 Anime4K 进行实时超分。
-
-特别感谢 [SyncPlay](https://github.com/Syncplay/syncplay) 本项目使用 SyncPlay 协议并通过 SyncPlay 公共服务器实现一起看功能。
-
-特别感谢 [所有贡献者](https://github.com/Predidit/Kazumi/graphs/contributors) 本项目因为你们变得更好。
-
-特别感谢 [trace.moe](https://trace.moe) 本项目使用了 trace.moe 提供的图片识别番剧功能。
-
-感谢 [media-kit](https://github.com/media-kit/media-kit) 本项目跨平台媒体播放能力来自 media-kit。
-
-感谢 [avbuild](https://github.com/wang-bin/avbuild) 本项目使用了来自 avbuild 的树外补丁实现非标准视频流播放。
-
-感谢 [hive](https://github.com/isar/hive) 本项目持久化储存能力来自 hive。
+感谢所有为 Kazumi 与 KazumiPlus 提供代码、规则、反馈和资源的贡献者。

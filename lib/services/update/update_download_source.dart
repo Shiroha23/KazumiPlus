@@ -1,9 +1,7 @@
 enum UpdateDownloadSource {
-  github,
-  mirror;
+  github;
 
   String get label => switch (this) {
     github => 'GitHub',
-    mirror => '镜像',
   };
 }

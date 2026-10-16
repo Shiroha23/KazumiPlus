@@ -34,7 +34,7 @@ class UpdateAvailableDialog extends StatefulWidget {
 
 class _UpdateAvailableDialogState extends State<UpdateAvailableDialog> {
   final _notesController = SmoothScrollController();
-  var _source = UpdateDownloadSource.mirror;
+  final _source = UpdateDownloadSource.github;
   late var _type = widget.updateInfo.recommendedInstallationType;
   var _disableAutoUpdate = false;
 
@@ -225,15 +225,10 @@ class _UpdateAvailableDialogState extends State<UpdateAvailableDialog> {
     return SettingsSection(
       margin: EdgeInsets.zero,
       tiles: [
-        SettingsDropdownTile<UpdateDownloadSource>(
+        SettingsTile(
           leading: Icons.cloud_download_rounded,
           title: const Text('下载源'),
-          value: _source,
-          options: {
-            for (final source in UpdateDownloadSource.values)
-              source: source.label,
-          },
-          onChanged: (source) => setState(() => _source = source),
+          value: Text(_source.label),
         ),
         if (types.length > 1)
           SettingsDropdownTile<InstallationType>(

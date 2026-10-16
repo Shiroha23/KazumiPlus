@@ -1,5 +1,5 @@
 name: kazumi
-description: "A new Flutter project."
+description: "KazumiPlus anime client with custom rules and danmaku support."
 publish_to: "none"
 version: 2.3.9+20309
 
@@ -147,9 +147,11 @@ flutter_native_splash:
   image_dark_ios: assets/images/logo/logo_ios.png
 
 msix_config:
-  display_name: Kazumi
-  publisher: CN=SignPath Foundation, O=SignPath Foundation, L=Lewes, S=Delaware, C=US
+  display_name: KazumiPlus
+  publisher: CN=Shiroha23
   logo_path: assets/images/logo/logo_rounded.png
+  output_name: KazumiPlus
+  publisher_display_name: Shiroha23
   sign_msix: false
   install_certificate: false
   build_windows: false

@@ -20,11 +20,6 @@
             description: 'Log level'
             required: true
             default: 'warning'
-          signpath_sign:
-            description: 'sign binary by signpath'
-            required: false
-            default: false
-            type: boolean
           run_android:
             description: 'manually run android build'
             required: false
@@ -146,14 +141,14 @@
               --dart-define=KAZUMI_KEY=$KAZUMI_KEY
             shell: bash
           - name: Package android build output
-            run: cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk Kazumi_android_canary.apk
+            run: cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk KazumiPlus_android_canary.apk
             shell: bash
 
           - name: Upload android outputs
             uses: actions/upload-artifact@v4
             with:
               name: android_outputs
-              path: Kazumi_android_*.apk
+              path: KazumiPlus_android_*.apk
 
       flutter-build-windows:
         needs: [flutter-test, flutter-analyze]
@@ -185,14 +180,14 @@
               --dart-define=DANDANAPI_KEY=$env:DANDANAPI_KEY
               --dart-define=KAZUMI_APPID=$env:KAZUMI_APPID
               --dart-define=KAZUMI_KEY=$env:KAZUMI_KEY
-          - run: Compress-Archive build/windows/x64/runner/Release/* Kazumi_windows_canary.zip
+          - run: Compress-Archive build/windows/x64/runner/Release/* KazumiPlus_windows_canary.zip
           - name: Upload windows outputs
             id: unsigned-windows-packet-artifacts
             uses: actions/upload-artifact@v4
             with:
               name: windows_outputs
               path: |
-                Kazumi_windows_*.zip
+                KazumiPlus_windows_*.zip
           # - name: Build unsigned msix
           #   run: dart run msix:create
           # - name: Upload windows msix ouputs
@@ -201,31 +196,8 @@
           #   with:
           #     name: windows_msix_outputs
           #     path: |
-          #       build/windows/x64/runner/Release/kazumi.msix
+          #       build/windows/x64/runner/Release/KazumiPlus.msix
           
-          # - run: New-Item -Path "build/windows/msix_signed_output" -ItemType Directory
-          # - name: sign windows msix
-          #   if: ${{ github.event.inputs.signpath_sign == 'true'}}
-          #   uses: signpath/github-action-submit-signing-request@v1
-          #   with:
-          #     api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
-          #     organization-id: 'fa047255-4772-4be1-b14f-5cfa62635877'
-          #     project-slug: 'Kazumi'
-          #     signing-policy-slug: 'test-signing'
-          #     artifact-configuration-slug: 'MSIX'
-          #     github-artifact-id: '${{ steps.unsigned-windows-msix-artifacts.outputs.artifact-id }}'
-          #     wait-for-completion: true
-          #     output-artifact-directory: 'build/windows/msix_signed_output'
-          
-          # - name: Upload windows msix signed ouputs
-          #   if: ${{ github.event.inputs.signpath_sign == 'true'}}
-          #   uses: actions/upload-artifact@v4
-          #   id: signed-windows-msix-artifacts
-          #   with:
-          #     name: windows_msix_signed_outputs
-          #     path: build/windows/msix_signed_output/*.msix
-
-
       flutter-build-ios:
         needs: [flutter-test, flutter-analyze]
         if: ${{ (github.event_name == 'pull_request' && ! github.event.pull_request.draft) || (github.event_name == 'workflow_dispatch' && (inputs.run_ios || (! inputs.run_android && ! inputs.run_windows && ! inputs.run_ios && ! inputs.run_macos && ! inputs.run_linux))) }}
@@ -256,12 +228,12 @@
               mkdir Payload
               cp -R build/ios/iphoneos/Runner.app Payload/Runner.app
               find Payload/Runner.app/Frameworks -type d -name "*.framework" -exec codesign --force --sign - --preserve-metadata=identifier,entitlements {} \;
-              zip -q -r Kazumi_ios_canary_no_sign.ipa Payload
+              zip -q -r KazumiPlus_ios_canary_no_sign.ipa Payload
           - name: Upload iOS build
             uses: actions/upload-artifact@v4
             with:
               name: ios_outputs
-              path: Kazumi_ios_*.ipa
+              path: KazumiPlus_ios_*.ipa
 
       flutter-build-macos:
         needs: [flutter-test, flutter-analyze]
@@ -290,15 +262,15 @@
           - name: Create DMG
             run: |
               npm install --global create-dmg
-              create-dmg build/macos/Build/Products/Release/Kazumi.app
+              create-dmg build/macos/Build/Products/Release/KazumiPlus.app
             continue-on-error: true
           - name: Rename DMG
-            run: mv Kazumi*.dmg Kazumi_macos_canary.dmg
+            run: mv KazumiPlus*.dmg KazumiPlus_macos_canary.dmg
           - name: Upload MacOS build
             uses: actions/upload-artifact@v4
             with:
               name: macos_outputs
-              path: Kazumi_macos_*.dmg
+              path: KazumiPlus_macos_*.dmg
 
       flutter-build-linux-amd64:
         needs: [flutter-test, flutter-analyze]
@@ -355,22 +327,22 @@
           - name: Package linux amd64 build output
             run: |
               # Tarball package
-              tar -zcvf Kazumi_linux_canary_amd64.tar.gz -C build/linux/x64/release/bundle .
+              tar -zcvf KazumiPlus_linux_canary_amd64.tar.gz -C build/linux/x64/release/bundle .
 
               # Debian package
-              mkdir Kazumi_linux_canary_amd64
-              cd Kazumi_linux_canary_amd64
-              mkdir -p opt/Kazumi
+              mkdir KazumiPlus_linux_canary_amd64
+              cd KazumiPlus_linux_canary_amd64
+              mkdir -p opt/KazumiPlus
               mkdir -p usr/share/applications
               mkdir -p usr/share/icons/hicolor/512x512/apps
-              cp -r ../build/linux/x64/release/bundle/* opt/Kazumi
+              cp -r ../build/linux/x64/release/bundle/* opt/KazumiPlus
               cp -r ../assets/linux/DEBIAN .
               chmod 0755 DEBIAN/postinst
               chmod 0755 DEBIAN/postrm
 
               cat>DEBIAN/control<<EOF
-              Maintainer: madoka773 <valigarmanda55@gmail.com>
-              Package: Kazumi
+              Maintainer: Shiroha23
+              Package: kazumiplus
               Version: 0.0.1
               Section: x11
               Priority: optional
@@ -378,7 +350,7 @@
               Essential: no
               Installed-Size: 34648
               Description: Watch Animes online with danmaku support.
-              Homepage: https://github.com/Predidit/Kazumi
+              Homepage: https://github.com/Shiroha23/KazumiPlus
               Depends: libayatana-appindicator3-1,
                        gir1.2-ayatanaappindicator3-0.1,
                        libwebkit2gtk-4.1-0
@@ -388,7 +360,7 @@
               cp ../assets/images/logo/logo_linux.png usr/share/icons/hicolor/512x512/apps/io.github.Predidit.Kazumi.png
 
               cd ..
-              dpkg-deb --build --root-owner-group Kazumi_linux_canary_amd64
+              dpkg-deb --build --root-owner-group KazumiPlus_linux_canary_amd64
             shell: bash
 
           - name: Upload linux amd64 outputs
@@ -396,8 +368,8 @@
             with:
               name: linux_amd64_outputs
               path: |
-                Kazumi_linux_*.tar.gz
-                Kazumi_linux_*.deb
+                KazumiPlus_linux_*.tar.gz
+                KazumiPlus_linux_*.deb
 
       flutter-build-linux-arm64:
         needs: [flutter-test, flutter-analyze]
@@ -409,7 +381,7 @@
           - name: Clone repository
             uses: actions/checkout@v4
           - name: Echo build progress
-            run: echo "Kazumi_linux_canary_arm64 build progress"
+            run: echo "KazumiPlus_linux_canary_arm64 build progress"
             shell: bash
           - name: Set up Flutter for ARM64
             uses: ./.github/actions/flutter-arm64-setup
@@ -436,22 +408,22 @@
           - name: Package linux arm64 build output
             run: |
               # Tarball package
-              tar -zcvf Kazumi_linux_canary_arm64.tar.gz -C build/linux/arm64/release/bundle .
+              tar -zcvf KazumiPlus_linux_canary_arm64.tar.gz -C build/linux/arm64/release/bundle .
 
               # Debian package
-              mkdir Kazumi_linux_canary_arm64
-              cd Kazumi_linux_canary_arm64
-              mkdir -p opt/Kazumi
+              mkdir KazumiPlus_linux_canary_arm64
+              cd KazumiPlus_linux_canary_arm64
+              mkdir -p opt/KazumiPlus
               mkdir -p usr/share/applications
               mkdir -p usr/share/icons/hicolor/512x512/apps
-              cp -r ../build/linux/arm64/release/bundle/* opt/Kazumi
+              cp -r ../build/linux/arm64/release/bundle/* opt/KazumiPlus
               cp -r ../assets/linux/DEBIAN .
               chmod 0755 DEBIAN/postinst
               chmod 0755 DEBIAN/postrm
 
               cat>DEBIAN/control<<EOF
-              Maintainer: madoka773 <valigarmanda55@gmail.com>
-              Package: Kazumi
+              Maintainer: Shiroha23
+              Package: kazumiplus
               Version: 0.0.1
               Section: x11
               Priority: optional
@@ -459,7 +431,7 @@
               Essential: no
               Installed-Size: $(du -sk opt | cut -f1)
               Description: Watch Animes online with danmaku support.
-              Homepage: https://github.com/Predidit/Kazumi
+              Homepage: https://github.com/Shiroha23/KazumiPlus
               Depends: libayatana-appindicator3-1,
                        gir1.2-ayatanaappindicator3-0.1,
                        libwebkit2gtk-4.1-0
@@ -469,7 +441,7 @@
               cp ../assets/images/logo/logo_linux.png usr/share/icons/hicolor/512x512/apps/io.github.Predidit.Kazumi.png
 
               cd ..
-              dpkg-deb --build --root-owner-group Kazumi_linux_canary_arm64
+              dpkg-deb --build --root-owner-group KazumiPlus_linux_canary_arm64
             shell: bash
 
           - name: Upload linux arm64 outputs
@@ -477,5 +449,5 @@
             with:
               name: linux_arm64_outputs
               path: |
-                Kazumi_linux_*.tar.gz
-                Kazumi_linux_*.deb
+                KazumiPlus_linux_*.tar.gz
+                KazumiPlus_linux_*.deb
