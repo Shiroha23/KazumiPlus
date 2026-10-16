@@ -6,12 +6,14 @@ class _SourceSearchGroup {
     required this.keyword,
     required this.status,
     required this.results,
+    this.isDefault = false,
   });
 
   final String name;
   final String keyword;
   final PluginSearchStatus status;
   final List<SearchItem> results;
+  final bool isDefault;
 
   bool get isSearching => status == PluginSearchStatus.pending;
   bool get hasResults =>
@@ -199,7 +201,7 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
                   header: true,
                   button: true,
                   expanded: !collapsed,
-                  label: '来源规则：${group.name}，${group.statusLabel}',
+                  label: '来源规则：${group.name}${group.isDefault ? '，默认规则' : ''}，${group.statusLabel}',
                   onTap: toggle,
                   excludeSemantics: true,
                   child: Material(
@@ -220,6 +222,14 @@ class _SourceSheetViewState extends State<_SourceSheetView> {
                                   color: colors.onSurfaceVariant,
                                 ),
                               )),
+                              if (group.isDefault) ...[
+                                const SizedBox(width: 8),
+                                Tooltip(
+                                  message: '默认规则',
+                                  child: Icon(Icons.star_rounded,
+                                      size: 18, color: colors.primary),
+                                ),
+                              ],
                               const SizedBox(width: 8),
                               Text(
                                 group.statusLabel,

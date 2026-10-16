@@ -90,6 +90,28 @@ abstract class _PluginsController with Store {
   @observable
   ObservableList<PluginHTTPItem> pluginHTTPList = ObservableList.of([]);
 
+  @readonly
+  String? _defaultPluginName;
+
+  bool isDefaultPlugin(Plugin plugin) =>
+      _defaultPluginName != null &&
+      pluginNameKey(plugin.name) == pluginNameKey(_defaultPluginName!);
+
+  Plugin? get defaultPlugin => pluginList.where(isDefaultPlugin).firstOrNull;
+
+  Future<void> setDefaultPlugin(Plugin? plugin) {
+    return _mutateAndPersist(() {
+      if (plugin != null &&
+          !pluginList.any(
+            (candidate) =>
+                pluginNameKey(candidate.name) == pluginNameKey(plugin.name),
+          )) {
+        throw ArgumentError('Default rule must be installed');
+      }
+      _defaultPluginName = plugin?.name;
+    }, errorMessage: 'Plugin: failed to persist default rule');
+  }
+
   final validityTracker = PluginValidityTracker();
 
   static const _pluginsFileName = 'plugins.json';
@@ -104,9 +126,14 @@ abstract class _PluginsController with Store {
     final pluginsFile = File('${directory.path}/$_pluginsFileName');
     _pluginsFile = pluginsFile;
     pluginList.clear();
+    _defaultPluginName = null;
     if (await pluginsFile.exists()) {
       final List<dynamic> json = jsonDecode(await pluginsFile.readAsString());
-      pluginList.addAll([for (final item in json) Plugin.fromJson(item)]);
+      for (final item in json) {
+        final plugin = Plugin.fromJson(item);
+        pluginList.add(plugin);
+        if (item['isDefault'] == true) _defaultPluginName ??= plugin.name;
+      }
       KazumiLogger().i('Plugin: Current Plugin number: ${pluginList.length}');
     } else {
       await _migrateLegacyPlugins(legacyDirectory);
@@ -126,8 +153,14 @@ abstract class _PluginsController with Store {
     await _savePlugins();
   }
 
-  List<dynamic> _pluginListToJson() =>
-      [for (final plugin in pluginList) plugin.toJson()];
+  List<dynamic> _pluginListToJson({Iterable<Plugin>? plugins}) => [
+    for (final plugin in plugins ?? pluginList)
+      {
+        ...plugin.toJson(),
+        // This preference belongs to the local collection, not exported rules.
+        if (isDefaultPlugin(plugin)) 'isDefault': true,
+      },
+  ];
 
   Future<void> removePlugin(Plugin plugin) {
     return _mutateAndPersist(
@@ -176,14 +209,17 @@ abstract class _PluginsController with Store {
     required String errorMessage,
   }) async {
     final previous = List<Plugin>.from(pluginList);
+    final previousDefault = _defaultPluginName;
     try {
       final result = mutate();
+      _defaultPluginName = pluginList.where(isDefaultPlugin).firstOrNull?.name;
       await _savePlugins();
       return result;
     } catch (error, stackTrace) {
       pluginList
         ..clear()
         ..addAll(previous);
+      _defaultPluginName = previousDefault;
       _errorReporter(errorMessage, error, stackTrace);
       rethrow;
     }
@@ -211,11 +247,13 @@ abstract class _PluginsController with Store {
     final previous = List<Plugin>.from(pluginList);
     final plugin = pluginList.removeAt(oldIndex);
     pluginList.insert(newIndex, plugin);
-    final jsonData = jsonEncode(_pluginListToJson());
+    final reordered = List<Plugin>.of(pluginList);
     final revision = ++_optimisticReorderRevision;
     return _mutations.run(() async {
       try {
-        await _writePluginsJson(jsonData);
+        await _writePluginsJson(
+          jsonEncode(_pluginListToJson(plugins: reordered)),
+        );
       } catch (error, stackTrace) {
         if (revision == _optimisticReorderRevision) {
           pluginList

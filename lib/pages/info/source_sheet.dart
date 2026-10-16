@@ -190,6 +190,7 @@ class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
             for (final plugin in _pluginsController.pluginList)
               plugin.name: _SourceSearchGroup(
                 name: plugin.name,
+                isDefault: _pluginsController.isDefaultPlugin(plugin),
                 keyword: _keywordFor(plugin.name),
                 status: widget.infoController.pluginSearchStatus[plugin.name] ??
                     PluginSearchStatus.pending,

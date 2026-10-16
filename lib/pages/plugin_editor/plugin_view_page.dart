@@ -170,6 +170,18 @@ class _PluginViewPageState extends State<PluginViewPage> {
     }
   }
 
+  Future<void> _toggleDefault(Plugin plugin) async {
+    final clear = _controller.isDefaultPlugin(plugin);
+    try {
+      await _controller.setDefaultPlugin(clear ? null : plugin);
+      KazumiDialog.showToast(
+        message: clear ? '已取消默认规则' : '已将 ${plugin.name} 设为默认规则',
+      );
+    } catch (_) {
+      KazumiDialog.showToast(message: '保存默认规则失败，请重试');
+    }
+  }
+
   Future<void> _updateOne(Plugin plugin) async {
     if (_updating || !_updatingNames.add(plugin.name)) return;
     setState(() {});
@@ -232,6 +244,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                 child: Observer(builder: (context) {
                   final colors = Theme.of(context).colorScheme;
                   final all = _controller.pluginList.toList();
+                  final defaultName = _controller.defaultPluginName;
                   final updates = all
                       .where((p) =>
                           _controller.pluginUpdateStatus(p) ==
@@ -261,7 +274,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                       children: [
                         RulePageIntro(
                           title: '我的规则',
-                          description: '管理你的番剧来源。拖动调整搜索顺序，点按规则进行编辑。',
+                          description: '管理你的番剧来源。拖动调整搜索顺序，点按规则进行编辑。点击星标设置默认规则，开始观看时直接播放。',
                           icon: Icons.extension_rounded,
                           actions: [
                             FilledButton.icon(
@@ -396,6 +409,12 @@ class _PluginViewPageState extends State<PluginViewPage> {
                           _selected.add(plugin.name);
                         }),
                         tags: [
+                          if (defaultName != null &&
+                              _controller.isDefaultPlugin(plugin))
+                            RuleTag(
+                                label: '默认规则',
+                                background: colors.primaryContainer,
+                                foreground: colors.onPrimaryContainer),
                           RuleTag(
                               label: plugin.version,
                               background: colors.surfaceContainerHighest,
@@ -419,12 +438,24 @@ class _PluginViewPageState extends State<PluginViewPage> {
                                 value: _selected.contains(plugin.name),
                                 semanticLabel: '选择 ${plugin.name}',
                                 onChanged: (_) => _toggleSelection(plugin.name))
-                          else if (_updatingNames.contains(plugin.name))
-                            const Padding(
-                                padding: EdgeInsets.all(12),
-                                child: LoadingIndicator(size: 24))
-                          else
-                            _menu(plugin, actualIndex),
+                          else ...[
+                            IconButton(
+                              tooltip: _controller.isDefaultPlugin(plugin)
+                                  ? '取消默认规则'
+                                  : '设为默认规则',
+                              isSelected: _controller.isDefaultPlugin(plugin),
+                              onPressed: () => _toggleDefault(plugin),
+                              icon: const Icon(Icons.star_outline_rounded),
+                              selectedIcon: Icon(Icons.star_rounded,
+                                  color: colors.primary),
+                            ),
+                            if (_updatingNames.contains(plugin.name))
+                              const Padding(
+                                  padding: EdgeInsets.all(12),
+                                  child: LoadingIndicator(size: 24))
+                            else
+                              _menu(plugin, actualIndex),
+                          ],
                           if (canReorder)
                             Tooltip(
                               message: '拖动排序',

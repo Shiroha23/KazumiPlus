@@ -20,6 +20,9 @@ import 'package:kazumi/pages/info/info_tabview.dart';
 import 'package:kazumi/pages/info/rating_review_dialog.dart';
 import 'package:kazumi/pages/info/source_sheet.dart';
 import 'package:kazumi/plugins/plugins_controller.dart';
+import 'package:kazumi/services/player/default_plugin_playback.dart';
+import 'package:kazumi/services/plugin/rule_engine_models.dart'
+    show RuleCancelToken;
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/platform/desktop_window_config.dart';
 import 'package:kazumi/services/storage/storage.dart';
@@ -42,7 +45,7 @@ class InfoPage extends StatefulWidget {
 }
 
 class _InfoPageState extends State<InfoPage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, KazumiDialogOwner {
   static const List<String> _infoTabs = <String>[
     '概览',
     '吐槽',
@@ -300,7 +303,8 @@ class _InfoPageState extends State<InfoPage>
     }
   }
 
-  void _startWatching() {
+  Future<void> _startWatching() async {
+    if (dialogs.isRunning) return;
     if (widget.pluginsController.pluginList.isEmpty) {
       KazumiDialog.showToast(
         message: '还没有规则，无法开始观看',
@@ -313,6 +317,39 @@ class _InfoPageState extends State<InfoPage>
       );
       return;
     }
+    final plugin = widget.pluginsController.defaultPlugin;
+    if (plugin == null) {
+      _showSourceSheet();
+      return;
+    }
+
+    var failed = false;
+    await dialogs.run((task) async {
+      final cancelToken = RuleCancelToken();
+      final args = await task.loading(
+        message: '正在使用 ${plugin.name} 获取播放来源',
+        barrierDismissible: isDesktop(),
+        onCancel: cancelToken.cancel,
+        action: () => resolveDefaultPluginPlayback(
+          plugin: plugin,
+          bangumiItem: infoController.bangumiItem,
+          cancelToken: cancelToken,
+        ),
+      );
+      task.withContext((context) =>
+          context.pushNamed('/video/', arguments: args));
+    }, onError: (error, stackTrace) {
+      failed = true;
+      KazumiLogger().w('InfoPage: default rule playback failed',
+          error: error, stackTrace: stackTrace);
+    });
+    if (mounted && failed) {
+      KazumiDialog.showToast(message: '默认规则暂不可用，请选择播放来源');
+      _showSourceSheet();
+    }
+  }
+
+  void _showSourceSheet() {
     showAdaptiveBottomSheet<void>(
       context: context,
       maxHeightFactor: 0.88,

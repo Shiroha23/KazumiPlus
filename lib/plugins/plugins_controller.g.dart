@@ -41,6 +41,26 @@ mixin _$PluginsController on _PluginsController, Store {
     });
   }
 
+  late final _$_defaultPluginNameAtom = Atom(
+    name: '_PluginsController._defaultPluginName',
+    context: context,
+  );
+
+  String? get defaultPluginName {
+    _$_defaultPluginNameAtom.reportRead();
+    return super._defaultPluginName;
+  }
+
+  @override
+  String? get _defaultPluginName => defaultPluginName;
+
+  @override
+  set _defaultPluginName(String? value) {
+    _$_defaultPluginNameAtom.reportWrite(value, super._defaultPluginName, () {
+      super._defaultPluginName = value;
+    });
+  }
+
   @override
   String toString() {
     return '''
