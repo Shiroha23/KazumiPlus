@@ -158,7 +158,9 @@ class _InfoEpisodesViewState extends State<InfoEpisodesView>
         if (overlap != null) SliverOverlapInjector(handle: overlap),
         SliverFillRemaining(
           hasScrollBody: false,
-          child: _loading
+          // TabBarView can paint the neighbouring tab before it becomes active.
+          // A configured default is still awaiting its first load at that point.
+          child: (_loading || (widget.defaultPlugin != null && !_failed))
               ? const Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

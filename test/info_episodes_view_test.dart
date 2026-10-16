@@ -86,7 +86,7 @@ void main() {
       for (var episode = 3; episode <= 100; episode++) 'EP $episode',
     ]);
     await tester.pumpWidget(view(active: false, defaultPlugin: plugin));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 16));
     expect(plugin.searches, 0);
     await tester.pumpWidget(view(defaultPlugin: plugin));
     await tester.pumpAndSettle();
@@ -122,6 +122,27 @@ void main() {
     await tester.pumpWidget(view(defaultPlugin: plugin));
     await tester.pumpAndSettle();
     expect(plugin.searches, 1);
+  });
+
+  testWidgets('default source shows loading before tab activation without flashing source selection',
+      (tester) async {
+    plugin.gate = Completer<void>();
+    await tester.pumpWidget(view(active: false, defaultPlugin: plugin));
+    expect(plugin.searches, 0);
+    expect(find.text('选择播放来源以查看剧集'), findsNothing);
+    expect(find.text('正在加载剧集'), findsOneWidget);
+
+    await tester.pumpWidget(view(defaultPlugin: plugin));
+    for (var frame = 0; frame < 12; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(find.text('选择播放来源以查看剧集'), findsNothing);
+      expect(find.text('正在加载剧集'), findsOneWidget);
+    }
+    expect(plugin.searches, 1);
+    plugin.gate!.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('EP 2'), findsOneWidget);
+    expect(find.text('正在加载剧集'), findsNothing);
   });
 
   for (final layout in [(width: 320.0, scale: 1.0), (width: 360.0, scale: 2.0)]) {
