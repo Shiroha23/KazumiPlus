@@ -23,6 +23,7 @@ import 'package:kazumi/utils/episode_url.dart';
 import 'package:kazumi/services/plugin/plugin_cookie_manager.dart';
 import 'package:kazumi/utils/media.dart';
 import 'package:kazumi/utils/async_session.dart';
+import 'package:kazumi/utils/danmaku.dart';
 import 'package:kazumi/services/platform/display_mode_service.dart';
 import 'package:kazumi/pages/video/video_fullscreen_controller.dart';
 
@@ -550,6 +551,9 @@ abstract class _VideoPageController with Store implements Disposable {
         params.bangumiId,
         params.pluginName,
         params.danmakuEpisodeNumber,
+        pageUrl: params.pageUrl,
+        config: params.danmakuConfig,
+        videoUrl: params.videoUrl,
       );
       if (session.isActive && danmakuSession.isActive) {
         if (result.hasDanmakus) {
@@ -562,14 +566,16 @@ abstract class _VideoPageController with Store implements Disposable {
         } else {
           playerController.danmaku.applyUnavailableDanmakuLoad(result);
           if (result.isFailed) {
-            KazumiDialog.showToast(message: '弹幕加载失败，可手动检索');
+            KazumiDialog.showToast(message: result.errorMessage);
           }
         }
       }
     } catch (e) {
       if (session.isActive && danmakuSession.isActive) {
         playerController.danmaku.finishDanmakuLoad(disableDanmaku: true);
-        KazumiDialog.showToast(message: '弹幕加载失败，可手动检索');
+        KazumiDialog.showToast(
+          message: danmakuErrorMessage(e, fallback: '弹幕加载失败，可手动检索'),
+        );
       }
       KazumiLogger().w('VideoPageController: failed to load danmaku', error: e);
     }
@@ -631,6 +637,7 @@ abstract class _VideoPageController with Store implements Disposable {
         bangumiId: bangumiItem.id,
         pluginName: currentPlugin.name,
         episode: resolvedEpisode.listIndex,
+        danmakuConfig: currentPlugin.danmakuConfig,
         danmakuEpisodeNumber: resolvedEpisode.danmakuEpisodeNumber,
         pageUrl: resolvedEpisode.pageUrl,
         sortNumber: resolvedEpisode.sortNumber,

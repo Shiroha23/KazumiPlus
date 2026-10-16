@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kazumi/modules/danmaku/danmaku_module.dart';
+import 'package:kazumi/request/core/network_exception.dart';
+
+String danmakuErrorMessage(Object? error, {required String fallback}) =>
+    error is NetworkException ? error.message : fallback;
 
 Color generateDanmakuColor(int colorValue) {
   final red = (colorValue >> 16) & 0xFF;

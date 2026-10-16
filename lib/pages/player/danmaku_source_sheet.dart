@@ -20,6 +20,7 @@ import 'package:kazumi/pages/player/controller/player_danmaku_controller.dart';
 import 'package:kazumi/request/apis/danmaku_api.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/storage/storage.dart';
+import 'package:kazumi/utils/danmaku.dart';
 
 const _episodeToolThreshold = 25;
 const _episodeSegmentSize = 100;
@@ -172,7 +173,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = '搜索失败';
+        _error = danmakuErrorMessage(error, fallback: '搜索失败');
       });
     }
   }
@@ -202,7 +203,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = '分集加载失败';
+        _error = danmakuErrorMessage(error, fallback: '分集加载失败');
       });
     }
   }
@@ -219,10 +220,12 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
       KazumiDialog.showToast(
         message: hasDanmakus ? '已切换弹幕源' : '暂无弹幕',
       );
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       setState(() => _loading = false);
-      KazumiDialog.showToast(message: '弹幕源切换失败');
+      KazumiDialog.showToast(
+        message: danmakuErrorMessage(error, fallback: '弹幕源切换失败'),
+      );
     }
   }
 

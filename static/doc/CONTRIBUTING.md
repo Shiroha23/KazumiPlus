@@ -41,6 +41,19 @@ flutter build apk --release
 # ...
 ```
 
+### 本地构建的弹幕凭据
+
+在线弹幕使用[弹弹play开放弹幕网络](https://doc.dandanplay.com/open/)，需要为自己的应用申请 AppId 和 AppSecret，分别填入 `DANDANAPI_APPID` 和 `DANDANAPI_KEY`。
+
+将仓库根目录的 `.kazumi_build_defines.env.example` 复制为 `.kazumi_build_defines.env`，填入凭据后运行：
+
+```bash
+flutter run --dart-define-from-file=.kazumi_build_defines.env
+# flutter build windows --release --dart-define-from-file=.kazumi_build_defines.env
+```
+
+VS Code 可选择名称带有 `local defines` 的启动配置。本地凭据文件已加入 `.gitignore`；CI 使用同名 Secrets。凭据在编译时注入，修改后需要停止应用并重新运行。未配置时弹弹play弹幕加载和手动检索不可用，已配置的网站弹幕规则不受影响。网站弹幕的配置方式见[网站弹幕规则](DANMAKU_RULES.md)。
+
 ## 代码质量
 
 您的更改应该通过检查和验证。

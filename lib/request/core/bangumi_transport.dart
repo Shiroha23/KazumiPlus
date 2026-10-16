@@ -9,6 +9,7 @@ import 'package:kazumi/request/core/network_config.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/network/bangumi_acceleration.dart';
 import 'package:kazumi/services/network/bangumi_ech_resolver.dart';
+import 'package:kazumi/utils/bangumi_mirror_credentials.dart';
 
 const _echRequestKey = 'bangumiEch';
 
@@ -18,7 +19,13 @@ class BangumiAccelerationInterceptor extends Interceptor {
     options.extra.remove(_echRequestKey);
     final uri = options.uri;
     if (ApiEndpoints.bangumiPublicApiHosts.contains(uri.host)) {
-      switch (BangumiAcceleration.current) {
+      final acceleration = BangumiAcceleration.current;
+      // Local builds have no private mirror credentials. Use the public API
+      // over ECH for protected endpoints instead of sending an empty signature.
+      final needsOfficialApi = acceleration == BangumiAcceleration.mirror &&
+          !hasBangumiMirrorCredentials &&
+          requiresBangumiMirrorSignature(uri, options.method);
+      switch (needsOfficialApi ? BangumiAcceleration.ech : acceleration) {
         case BangumiAcceleration.direct:
           break;
         case BangumiAcceleration.ech:

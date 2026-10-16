@@ -4,6 +4,8 @@ import 'package:canvas_danmaku/canvas_danmaku.dart' as canvas;
 import 'package:kazumi/modules/danmaku/danmaku_module.dart';
 import 'package:kazumi/pages/download/download_controller.dart';
 import 'package:kazumi/request/apis/danmaku_api.dart';
+import 'package:kazumi/plugins/danmaku_rule_config.dart';
+import 'package:kazumi/services/danmaku/rule_danmaku_service.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:mobx/mobx.dart';
@@ -25,6 +27,7 @@ class DanmakuLoadResult {
     required this.danmakus,
     required this.bangumiID,
     required this.status,
+    this.errorMessage = '',
   });
 
   factory DanmakuLoadResult.success({
@@ -42,17 +45,22 @@ class DanmakuLoadResult {
 
   factory DanmakuLoadResult.failed({
     required int bangumiID,
+    Object? error,
+    String? message,
   }) {
     return DanmakuLoadResult(
       danmakus: const [],
       bangumiID: bangumiID,
       status: DanmakuLoadStatus.failed,
+      errorMessage: message ??
+          danmakuErrorMessage(error, fallback: '弹幕加载失败，可手动检索'),
     );
   }
 
   final List<DanmakuEntry> danmakus;
   final int bangumiID;
   final DanmakuLoadStatus status;
+  final String errorMessage;
 
   bool get hasDanmakus => status == DanmakuLoadStatus.success;
 
@@ -139,18 +147,27 @@ abstract class _PlayerDanmakuController with Store {
   Future<DanmakuLoadResult> fetchDanmaku(
     int bangumiId,
     String pluginName,
-    int episode,
-  ) async {
+    int episode, {
+    String pageUrl = '',
+    DanmakuRuleConfig? config,
+    String videoUrl = '',
+  }) async {
     if (isLocalPlayback()) {
       return await _fetchCachedDanmaku(
         bangumiId,
         pluginName,
         episode,
+        pageUrl: pageUrl,
+        config: config,
       );
     }
-    return await _fetchDanDanmakuByBgmBangumiID(
+    return await _fetchRemoteDanmaku(
       bangumiId,
       episode,
+      pageUrl: pageUrl,
+      pluginName: pluginName,
+      config: config,
+      videoUrl: videoUrl,
     );
   }
 
@@ -189,7 +206,12 @@ abstract class _PlayerDanmakuController with Store {
   }
 
   Future<DanmakuLoadResult> _fetchCachedDanmaku(
-      int bangumiId, String pluginName, int episode) async {
+    int bangumiId,
+    String pluginName,
+    int episode, {
+    String pageUrl = '',
+    DanmakuRuleConfig? config,
+  }) async {
     KazumiLogger().i(
         'PlayerController: attempting to load cached danmaku for episode $episode');
     var nextBangumiID = bangumiID;
@@ -211,37 +233,53 @@ abstract class _PlayerDanmakuController with Store {
         KazumiLogger()
             .i('PlayerController: no cached danmaku, attempting online fetch');
         try {
-          nextBangumiID =
-              await DanmakuApi.getDanDanBangumiIDByBgmBangumiID(bangumiId);
-          if (nextBangumiID != 0) {
-            var res = await DanmakuApi.getDanDanmaku(nextBangumiID, episode);
-            if (res.isNotEmpty) {
-              KazumiLogger()
-                  .i('PlayerController: fetched ${res.length} danmakus online');
-              _saveDanmakuToCache(downloadController, bangumiId, pluginName,
-                  episode, res, nextBangumiID);
-            }
-            return DanmakuLoadResult.success(
-              danmakus: res,
-              bangumiID: nextBangumiID,
-            );
+          final result = await _fetchRemoteDanmaku(bangumiId, episode,
+              pageUrl: pageUrl, pluginName: pluginName,
+              config: config ?? downloadController.danmakuConfigFor(pluginName));
+          if (result.hasDanmakus) {
+            _saveDanmakuToCache(downloadController, bangumiId, pluginName,
+                episode, result.danmakus, result.bangumiID);
           }
+          return result;
         } catch (e) {
           KazumiLogger().w(
               'PlayerController: failed to fetch danmaku online (may be offline)',
               error: e);
-          return DanmakuLoadResult.failed(bangumiID: nextBangumiID);
+          return DanmakuLoadResult.failed(bangumiID: nextBangumiID, error: e);
         }
       }
     } catch (e) {
       KazumiLogger()
           .w('PlayerController: failed to load cached danmaku', error: e);
-      return DanmakuLoadResult.failed(bangumiID: nextBangumiID);
+      return DanmakuLoadResult.failed(bangumiID: nextBangumiID, error: e);
     }
-    return DanmakuLoadResult.success(
-      danmakus: const [],
-      bangumiID: nextBangumiID,
-    );
+  }
+
+  Future<DanmakuLoadResult> _fetchRemoteDanmaku(
+    int bangumiId,
+    int episode, {
+    required String pageUrl,
+    required String pluginName,
+    DanmakuRuleConfig? config,
+    String videoUrl = '',
+  }) async {
+    if (config == null || !config.enabled) {
+      return _fetchDanDanmakuByBgmBangumiID(bangumiId, episode);
+    }
+    try {
+      final entries = await RuleDanmakuService.instance.fetch(
+          config: config, pageUrl: pageUrl, pluginName: pluginName,
+          episodeNumber: episode, videoUrl: videoUrl);
+      KazumiLogger().i('Rule danmaku: loaded ${entries.length} entries from $pluginName');
+      return DanmakuLoadResult.success(danmakus: entries, bangumiID: 0);
+    } catch (error) {
+      KazumiLogger().w('Rule danmaku: failed to load $pluginName', error: error);
+      return DanmakuLoadResult.failed(
+        bangumiID: 0,
+        error: error,
+        message: '$pluginName 网站弹幕加载失败，请检查弹幕规则或稍后重试',
+      );
+    }
   }
 
   void _saveDanmakuToCache(
@@ -290,8 +328,8 @@ abstract class _PlayerDanmakuController with Store {
       KazumiLogger().w(
           'PlayerController: failed to get danmaku [BgmBangumiID] $bgmBangumiID',
           error: e);
+      return DanmakuLoadResult.failed(bangumiID: nextBangumiID, error: e);
     }
-    return DanmakuLoadResult.failed(bangumiID: nextBangumiID);
   }
 
   @action

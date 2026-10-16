@@ -1,5 +1,6 @@
 import 'package:kazumi/bean/widget/smooth_scroll.dart';
 import 'dart:convert';
+import 'package:dio/dio.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -10,6 +11,9 @@ import 'package:kazumi/pages/plugin_editor/rule_management_widgets.dart';
 import 'package:kazumi/pages/plugin_editor/editor_form_widgets.dart';
 import 'package:kazumi/plugins/anti_crawler_config.dart';
 import 'package:kazumi/plugins/api_rule_config.dart';
+import 'package:kazumi/plugins/danmaku_rule_config.dart';
+import 'package:kazumi/plugins/danmaku_rule_presets.dart';
+import 'package:kazumi/services/danmaku/rule_danmaku_service.dart';
 import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/request/config/api_endpoints.dart';
@@ -161,6 +165,12 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
   int _section = 0;
   bool _saving = false;
   String? _editorError;
+  final _danmakuJson = TextEditingController();
+  final _danmakuTestPage = TextEditingController();
+  final _danmakuTestEpisode = TextEditingController(text: '1');
+  CancelToken? _danmakuTestCancel;
+  bool _testingDanmaku = false;
+  String? _danmakuTestResult;
   final TextEditingController nameController = TextEditingController();
   final TextEditingController versionController = TextEditingController();
   final TextEditingController userAgentController = TextEditingController();
@@ -278,6 +288,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
   void initState() {
     super.initState();
     final Plugin plugin = widget.plugin;
+    _danmakuJson.text = _prettyJson(plugin.danmakuConfig?.toJson());
     _api = plugin.api;
     _type = plugin.type;
     nameController.text = plugin.name;
@@ -361,6 +372,10 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
 
   @override
   void dispose() {
+    _danmakuTestCancel?.cancel();
+    _danmakuJson.dispose();
+    _danmakuTestPage.dispose();
+    _danmakuTestEpisode.dispose();
     _formScroll.dispose();
     nameController.dispose();
     versionController.dispose();
@@ -482,6 +497,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
                       ButtonSegment(value: 1, label: Text('搜索')),
                       ButtonSegment(value: 2, label: Text('选集')),
                       ButtonSegment(value: 3, label: Text('高级')),
+                      ButtonSegment(value: 4, label: Text('弹幕')),
                     ],
                     onChanged: (value) => setState(() => _section = value),
                   ),
@@ -534,6 +550,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
   }
 
   Widget _buildCurrentSection() {
+    if (_section == 4) return _buildDanmakuSection();
     if (_section == 3) return _buildAdvancedOptionsCard();
     final isSearch = _section == 1;
     return RuleSection(
@@ -604,6 +621,79 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
       ),
     );
   }
+
+  DanmakuRuleConfig? _buildDanmakuConfig() {
+    if (_danmakuJson.text.trim().isEmpty) return null;
+    final json = jsonDecode(_danmakuJson.text);
+    if (json is! Map<String, dynamic>) {
+      throw const FormatException('弹幕配置必须是 JSON 对象');
+    }
+    final config = DanmakuRuleConfig.fromJson(json);
+    RuleDanmakuService.validate(config);
+    return config;
+  }
+
+  Future<void> _testDanmaku() async {
+    if (_testingDanmaku) return;
+    setState(() { _testingDanmaku = true; _danmakuTestResult = null; });
+    final cancel = _danmakuTestCancel = CancelToken();
+    try {
+      final config = _buildDanmakuConfig();
+      if (config == null || !config.enabled) {
+        throw const FormatException('请先配置并启用网站弹幕');
+      }
+      final episode = int.tryParse(_danmakuTestEpisode.text.trim());
+      if (episode == null || episode < 1) throw const FormatException('测试集数必须大于 0');
+      final entries = await RuleDanmakuService.instance.fetch(
+        config: config, pageUrl: _danmakuTestPage.text.trim(),
+        pluginName: nameController.text, episodeNumber: episode,
+        cancelToken: cancel,
+      );
+      if (mounted) setState(() => _danmakuTestResult = '读取到 ${entries.length} 条弹幕');
+    } catch (error) {
+      if (mounted) setState(() => _danmakuTestResult = '测试失败：$error');
+    } finally {
+      if (mounted) setState(() => _testingDanmaku = false);
+    }
+  }
+
+  Widget _buildDanmakuSection() => RuleSection(
+    title: '网站弹幕规则',
+    description: '为当前规则配置网站弹幕接口。留空使用弹弹play；enabled 为 false 可暂时停用网站弹幕。',
+    icon: Icons.subtitles_outlined,
+    child: Column(
+      spacing: 16,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text('选择示例后，按网站实际接口修改配置。支持预请求、分集匹配、请求头和 JSONPath 字段映射。'),
+        Wrap(spacing: 8, children: [
+          for (final preset in <String, DanmakuRuleConfig Function()>{
+            'JSON 示例': DanmakuRulePresets.json,
+            'DPlayer 示例': DanmakuRulePresets.dplayer,
+            'XML 示例': DanmakuRulePresets.bilibiliXml,
+          }.entries)
+            TextButton(
+              onPressed: () => setState(() {
+                _danmakuJson.text = _prettyJson(preset.value().toJson());
+                _danmakuTestResult = null;
+              }),
+              child: Text(preset.key),
+            ),
+          TextButton(onPressed: () => setState(() => _danmakuJson.clear()), child: const Text('清空配置')),
+        ]),
+        EditorTextField(controller: _danmakuJson, label: '弹幕规则（JSON）', maxLines: 22,
+          helper: '可用 @pageUrl、@videoUrl、@episodeNumber、@episodeIndex，以及 pagePattern 命名捕获组和预请求变量。'),
+        EditorTextField(controller: _danmakuTestPage, label: '测试播放页 URL'),
+        EditorTextField(controller: _danmakuTestEpisode, label: '测试集数（可由播放页命名组覆盖）'),
+        if (_danmakuTestResult != null) Text(_danmakuTestResult!),
+        FilledButton.tonalIcon(
+          onPressed: _testingDanmaku ? null : _testDanmaku,
+          icon: _testingDanmaku ? const LoadingIndicator(size: 20) : const Icon(Icons.science_outlined),
+          label: Text(_testingDanmaku ? '测试中' : '测试弹幕'),
+        ),
+      ],
+    ),
+  );
 
   Widget _buildAdvancedOptionsCard() {
     return RuleSection(
@@ -989,8 +1079,9 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
   Plugin _buildEditedPlugin() {
     final searchConfig = _buildSearchApiConfig();
     final chapterConfig = _buildChapterApiConfig();
+    final danmakuConfig = _buildDanmakuConfig();
     return Plugin(
-      api: searchMode == RuleMode.api || chapterMode == RuleMode.api
+      api: searchMode == RuleMode.api || chapterMode == RuleMode.api || danmakuConfig != null
           ? ApiEndpoints.apiLevel.toString()
           : _api,
       type: _type,
@@ -1015,6 +1106,7 @@ class _PluginEditorPageState extends State<PluginEditorPage> {
       chapterMode: chapterMode,
       searchApiConfig: searchConfig,
       chapterApiConfig: chapterConfig,
+      danmakuConfig: danmakuConfig,
       antiCrawlerConfig: AntiCrawlerConfig(
         enabled: antiCrawlerEnabled,
         captchaType: captchaType,

@@ -6,6 +6,7 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
+import 'package:kazumi/bean/widget/bangumi_mirror_error_widget.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
 import 'package:kazumi/bean/dialog/adaptive_bottom_sheet.dart';
 import 'package:kazumi/bean/dialog/material_bottom_sheet.dart';
@@ -296,7 +297,9 @@ class _SearchPageState extends State<SearchPage> {
           Text(
               busy
                   ? '正在搜索…'
-                  : '${items.length} 部番剧${items.length < allItems.length ? ' · 隐藏 ${allItems.length - items.length} 部' : ''}',
+                  : failed
+                      ? '搜索请求失败'
+                      : '${items.length} 部番剧${items.length < allItems.length ? ' · 隐藏 ${allItems.length - items.length} 部' : ''}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant)),
           if (summary.isNotEmpty) ...[
@@ -311,6 +314,12 @@ class _SearchPageState extends State<SearchPage> {
       )),
       if (busy && allItems.isEmpty)
         const SliverToBoxAdapter(child: _SearchLoadingState())
+      else if (failed && allItems.isEmpty)
+        SliverToBoxAdapter(
+          child: BangumiMirrorErrorWidget(
+            onRetry: () => _submit(_submittedQuery!),
+          ),
+        )
       else if (allItems.isEmpty)
         const SliverToBoxAdapter(
           child: GeneralEmptyState(
@@ -340,7 +349,11 @@ class _SearchPageState extends State<SearchPage> {
           width: width,
           showRating: GStorage.getSetting(SettingsKeys.showRating),
         ),
-      if (allItems.isNotEmpty || !failed)
+      if (failed && allItems.isNotEmpty)
+        SliverToBoxAdapter(
+          child: BangumiMirrorErrorWidget(onRetry: _loadMore),
+        ),
+      if (!failed)
         SliverToBoxAdapter(
             child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24),

@@ -14,6 +14,8 @@ import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/services/video_source/services.dart';
 import 'package:kazumi/request/apis/danmaku_api.dart';
+import 'package:kazumi/plugins/danmaku_rule_config.dart';
+import 'package:kazumi/services/danmaku/rule_danmaku_service.dart';
 import 'package:mobx/mobx.dart';
 
 part 'download_controller.g.dart';
@@ -413,6 +415,9 @@ abstract class _DownloadController with Store {
     await file.writeAsString(jsonEncode(wrapper));
   }
 
+  DanmakuRuleConfig? danmakuConfigFor(String pluginName) =>
+      _findPlugin(pluginName)?.danmakuConfig;
+
   Future<List<DanmakuEntry>?> getCachedDanmakus(
       int bangumiId, String pluginName, int episodeNumber) async {
     final episode =
@@ -652,6 +657,10 @@ abstract class _DownloadController with Store {
           request.recordKey,
           request.bangumiId,
           request.episodeNumber,
+          pluginName: request.pluginName,
+          pageUrl: fullUrl,
+          danmakuConfig: plugin.danmakuConfig,
+          videoUrl: m3u8Url,
         );
       }
     } finally {
@@ -702,24 +711,32 @@ abstract class _DownloadController with Store {
   }
 
   void _fetchAndCacheDanmakuAsync(
-      String recordKey, int bangumiId, int episodeNumber) {
+    String recordKey,
+    int bangumiId,
+    int episodeNumber, {
+    required String pluginName,
+    required String pageUrl,
+    DanmakuRuleConfig? danmakuConfig,
+    String videoUrl = '',
+  }) {
     Future(() async {
       try {
         KazumiLogger().i(
             'DownloadController: fetching danmaku for episode $episodeNumber (async)');
 
-        // 获取 DanDan 番剧 ID
-        final danDanBangumiID =
-            await DanmakuApi.getDanDanBangumiIDByBgmBangumiID(bangumiId);
-        if (danDanBangumiID == 0) {
-          KazumiLogger().w(
-              'DownloadController: failed to get DanDan bangumiID for $bangumiId');
-          return;
+        var danDanBangumiID = 0;
+        final List<DanmakuEntry> danmakus;
+        if (danmakuConfig != null && danmakuConfig.enabled) {
+          danmakus = await RuleDanmakuService.instance.fetch(
+              config: danmakuConfig, pageUrl: pageUrl, pluginName: pluginName,
+              episodeNumber: episodeNumber, videoUrl: videoUrl);
+        } else {
+          danDanBangumiID =
+              await DanmakuApi.getDanDanBangumiIDByBgmBangumiID(bangumiId);
+          if (danDanBangumiID == 0) return;
+          danmakus =
+              await DanmakuApi.getDanDanmaku(danDanBangumiID, episodeNumber);
         }
-
-        // 获取弹幕列表
-        final danmakus =
-            await DanmakuApi.getDanDanmaku(danDanBangumiID, episodeNumber);
         if (danmakus.isEmpty) {
           KazumiLogger().i(
               'DownloadController: no danmaku found for episode $episodeNumber');
