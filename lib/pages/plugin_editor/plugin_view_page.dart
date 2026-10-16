@@ -173,7 +173,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
   Future<void> _toggleDefault(Plugin plugin) async {
     final clear = _controller.isDefaultPlugin(plugin);
     try {
-      await _controller.setDefaultPlugin(clear ? null : plugin);
+      await _controller.setDefaultPlugin(plugin, enabled: !clear);
       KazumiDialog.showToast(
         message: clear ? '已取消默认规则' : '已将 ${plugin.name} 设为默认规则',
       );
@@ -244,7 +244,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                 child: Observer(builder: (context) {
                   final colors = Theme.of(context).colorScheme;
                   final all = _controller.pluginList.toList();
-                  final defaultName = _controller.defaultPluginName;
+                  final defaultNames = _controller.defaultPluginNames;
                   final updates = all
                       .where((p) =>
                           _controller.pluginUpdateStatus(p) ==
@@ -274,7 +274,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                       children: [
                         RulePageIntro(
                           title: '我的规则',
-                          description: '管理你的番剧来源。拖动调整搜索顺序，点按规则进行编辑。点击星标设置默认规则，开始观看时直接播放。',
+                          description: '管理你的番剧来源。点击星标可选择多个默认规则，按列表从上到下依次尝试播放。拖动可调整优先级，点按规则进行编辑。',
                           icon: Icons.extension_rounded,
                           actions: [
                             FilledButton.icon(
@@ -409,8 +409,7 @@ class _PluginViewPageState extends State<PluginViewPage> {
                           _selected.add(plugin.name);
                         }),
                         tags: [
-                          if (defaultName != null &&
-                              _controller.isDefaultPlugin(plugin))
+                          if (defaultNames.contains(plugin.name))
                             RuleTag(
                                 label: '默认规则',
                                 background: colors.primaryContainer,

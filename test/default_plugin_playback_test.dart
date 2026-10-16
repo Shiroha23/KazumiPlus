@@ -6,12 +6,14 @@ import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/services/player/default_plugin_playback.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart'
     show RuleCancelToken;
+import 'package:logger/logger.dart';
 
 void main() {
   late _PlaybackPlugin plugin;
   late BangumiItem item;
 
   setUp(() {
+    Logger.level = Level.off;
     plugin = _PlaybackPlugin();
     item = BangumiItem(
       id: 1,
@@ -117,6 +119,67 @@ void main() {
     expect(plugin.source, isNull);
   });
 
+  for (final failure in ['search', 'empty results', 'empty playlist', 'captcha']) {
+    test('tries the next default after $failure and stops after success', () async {
+      final second = _PlaybackPlugin(name: 'second');
+      final third = _PlaybackPlugin(name: 'third');
+      switch (failure) {
+        case 'search':
+          plugin.searchError = const SearchErrorException('default');
+        case 'empty results':
+          plugin.results = [];
+        case 'empty playlist':
+          plugin.roads = [];
+        case 'captcha':
+          plugin.searchError = const CaptchaRequiredException('default');
+      }
+      final args = await resolveDefaultPluginsPlayback(
+        plugins: [plugin, second, third],
+        bangumiItem: item,
+      );
+      expect(plugin.keyword, isNotNull);
+      expect(second.keyword, isNotNull);
+      expect(third.keyword, isNull);
+      expect(args.plugin, same(second));
+    });
+  }
+
+  test('uses the first preferred rule without querying lower priority rules', () async {
+    final second = _PlaybackPlugin(name: 'second');
+    final args = await resolveDefaultPluginsPlayback(
+      plugins: [plugin, second], bangumiItem: item,
+    );
+    expect(args.plugin, same(plugin));
+    expect(second.keyword, isNull);
+  });
+
+  test('all failed defaults propagate an error for manual source selection', () async {
+    plugin.results = [];
+    final second = _PlaybackPlugin(name: 'second')..roads = [];
+    await expectLater(resolveDefaultPluginsPlayback(
+      plugins: [plugin, second], bangumiItem: item,
+    ), throwsA(isA<ChapterErrorException>()));
+    expect(second.keyword, isNotNull);
+  });
+
+  test('cancellation stops fallback to lower priority rules', () async {
+    plugin.cancelAfterSearch = true;
+    final second = _PlaybackPlugin(name: 'second');
+    final token = RuleCancelToken();
+    await expectLater(resolveDefaultPluginsPlayback(
+      plugins: [plugin, second], bangumiItem: item, cancelToken: token,
+    ), throwsA(same(token.cancelError)));
+    expect(second.keyword, isNull);
+  });
+
+  test('an already cancelled request does not query any rule', () async {
+    final token = RuleCancelToken()..cancel();
+    await expectLater(resolveDefaultPluginsPlayback(
+      plugins: [plugin], bangumiItem: item, cancelToken: token,
+    ), throwsA(same(token.cancelError)));
+    expect(plugin.keyword, isNull);
+  });
+
   test('cancelling search prevents a subsequent playlist request', () async {
     final token = RuleCancelToken();
     plugin.cancelAfterSearch = true;
@@ -134,8 +197,10 @@ void main() {
 }
 
 class _PlaybackPlugin implements Plugin {
+  _PlaybackPlugin({this.name = 'default'});
+
   @override
-  String get name => 'default';
+  final String name;
 
   List<SearchItem> results = [SearchItem(name: '番剧名称', src: '/match')];
   List<Road> roads = [

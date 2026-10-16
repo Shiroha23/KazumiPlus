@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:kazumi/bean/widget/empty_state_widget.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
 import 'package:kazumi/bean/widget/state_presentation.dart';
@@ -15,14 +16,14 @@ class InfoEpisodesView extends StatefulWidget {
   const InfoEpisodesView({
     super.key,
     required this.bangumiItem,
-    required this.defaultPlugin,
+    required this.defaultPlugins,
     required this.isActive,
     required this.onChooseSource,
     required this.onPlay,
   });
 
   final BangumiItem bangumiItem;
-  final Plugin? defaultPlugin;
+  final List<Plugin> defaultPlugins;
   final bool isActive;
   final Future<OnlineVideoPlaybackArgs?> Function() onChooseSource;
   final ValueChanged<OnlineVideoPlaybackArgs> onPlay;
@@ -52,7 +53,7 @@ class _InfoEpisodesViewState extends State<InfoEpisodesView>
   void didUpdateWidget(covariant InfoEpisodesView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.bangumiItem.id != widget.bangumiItem.id ||
-        oldWidget.defaultPlugin != widget.defaultPlugin) {
+        !listEquals(oldWidget.defaultPlugins, widget.defaultPlugins)) {
       _cancelToken?.cancel();
       _cancelToken = null;
       _args = null;
@@ -63,16 +64,16 @@ class _InfoEpisodesViewState extends State<InfoEpisodesView>
   }
 
   Future<void> _load() async {
-    final plugin = widget.defaultPlugin;
-    if (plugin == null || _loading || _choosingSource) return;
+    final plugins = widget.defaultPlugins;
+    if (plugins.isEmpty || _loading || _choosingSource) return;
     final token = _cancelToken = RuleCancelToken();
     setState(() {
       _loading = true;
       _failed = false;
     });
     try {
-      final args = await resolveDefaultPluginPlayback(
-        plugin: plugin,
+      final args = await resolveDefaultPluginsPlayback(
+        plugins: plugins,
         bangumiItem: widget.bangumiItem,
         cancelToken: token,
       );
@@ -160,7 +161,7 @@ class _InfoEpisodesViewState extends State<InfoEpisodesView>
           hasScrollBody: false,
           // TabBarView can paint the neighbouring tab before it becomes active.
           // A configured default is still awaiting its first load at that point.
-          child: (_loading || (widget.defaultPlugin != null && !_failed))
+          child: (_loading || (widget.defaultPlugins.isNotEmpty && !_failed))
               ? const Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

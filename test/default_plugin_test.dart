@@ -52,20 +52,26 @@ void main() {
 
       final restored = PluginsController();
       await restored.init();
-      expect(restored.defaultPluginName, 'preferred');
+      expect(restored.defaultPluginNames, ['preferred']);
       expect(restored.pluginList.map((p) => p.name), [
         'first',
         'preferred',
         'last',
       ]);
-      expect(restored.defaultPlugin?.name, 'preferred');
+      expect(restored.defaultPlugins.single.name, 'preferred');
       expect(restored.pluginList[1].toJson(), isNot(contains('isDefault')));
 
-      await restored.setDefaultPlugin(null);
+      await restored.setDefaultPlugin(restored.pluginList.last);
+      final multiple = PluginsController();
+      await multiple.init();
+      expect(multiple.defaultPluginNames, ['preferred', 'last']);
+
+      await restored.setDefaultPlugin(rule('preferred'), enabled: false);
+      await restored.setDefaultPlugin(rule('last'), enabled: false);
       final cleared = PluginsController();
       await cleared.init();
-      expect(cleared.defaultPluginName, isNull);
-      expect(cleared.defaultPlugin, isNull);
+      expect(cleared.defaultPluginNames, isEmpty);
+      expect(cleared.defaultPlugins, isEmpty);
       expect(cleared.pluginList.map((p) => p.name), [
         'first',
         'preferred',
@@ -75,7 +81,7 @@ void main() {
   );
 
   test(
-    'switches default and preserves it through updates and reordering',
+    'keeps multiple defaults through updates and reorders their priority',
     () async {
       late List<dynamic> saved;
       final controller = PluginsController(
@@ -89,9 +95,9 @@ void main() {
       await controller.updatePlugin(rule('TWO')..version = '2.0');
       await controller.onReorder(0, 1);
 
-      expect(controller.defaultPluginName, 'TWO');
-      expect(controller.defaultPlugin?.version, '2.0');
-      expect(saved.where((p) => p['isDefault'] == true).single['name'], 'TWO');
+      expect(controller.defaultPluginNames, ['TWO', 'one']);
+      expect(controller.defaultPlugins.first.version, '2.0');
+      expect(saved.where((p) => p['isDefault'] == true).map((p) => p['name']), ['TWO', 'one']);
     },
   );
 
@@ -108,7 +114,7 @@ void main() {
     final reordering = controller.onReorder(0, 1);
     await Future.wait([setting, reordering]);
 
-    expect(controller.defaultPluginName, 'two');
+    expect(controller.defaultPluginNames, ['two']);
     expect(saved.where((p) => p['isDefault'] == true).single['name'], 'two');
   });
 
@@ -119,6 +125,7 @@ void main() {
         final controller = PluginsController(pluginJsonWriter: (_) async {});
         await controller.updatePlugins([rule('one'), rule('two')]);
         await controller.setDefaultPlugin(controller.pluginList.first);
+        await controller.setDefaultPlugin(controller.pluginList.last);
         if (batch) {
           await controller.removePlugins({'one'});
         } else {
@@ -126,8 +133,8 @@ void main() {
         }
         await controller.updatePlugin(rule('one'));
 
-        expect(controller.defaultPluginName, isNull);
-        expect(controller.defaultPlugin, isNull);
+        expect(controller.defaultPluginNames, ['two']);
+        expect(controller.defaultPlugins.single.name, 'two');
         expect(controller.pluginList.map((p) => p.name), ['two', 'one']);
       },
     );
@@ -149,12 +156,17 @@ void main() {
       controller.setDefaultPlugin(controller.pluginList.last),
       throwsA(isA<FileSystemException>()),
     );
-    expect(controller.defaultPluginName, 'one');
+    expect(controller.defaultPluginNames, ['one']);
+    await expectLater(
+      controller.setDefaultPlugin(rule('one'), enabled: false),
+      throwsA(isA<FileSystemException>()),
+    );
+    expect(controller.defaultPluginNames, ['one']);
     await expectLater(
       controller.removePlugins({'one'}),
       throwsA(isA<FileSystemException>()),
     );
-    expect(controller.defaultPluginName, 'one');
+    expect(controller.defaultPluginNames, ['one']);
     expect(controller.pluginList.map((p) => p.name), ['one', 'two']);
   });
 
@@ -168,11 +180,11 @@ void main() {
       controller.setDefaultPlugin(rule('missing')),
       throwsArgumentError,
     );
-    expect(controller.defaultPluginName, isNull);
+    expect(controller.defaultPluginNames, isEmpty);
     expect(writes, 0);
   });
 
-  testWidgets('star button sets, switches and clears the default reactively', (
+  testWidgets('star buttons select and clear multiple defaults independently', (
     tester,
   ) async {
     final controller = PluginsController(
@@ -201,7 +213,7 @@ void main() {
           lessThan(tester.getCenter(find.byTooltip('$name 的更多操作')).dx));
       await tester.tap(button);
       await tester.pumpAndSettle();
-      expect(controller.defaultPluginName, name);
+      expect(controller.defaultPluginNames, ['one', if (name == 'two') 'two']);
       expect(
         find.descendant(
           of: find.widgetWithText(RuleCard, name),
@@ -209,12 +221,19 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('默认规则'), findsOneWidget);
+      expect(find.text('默认规则'), findsNWidgets(name == 'one' ? 1 : 2));
     }
 
+    await tester.tap(find.descendant(
+      of: find.widgetWithText(RuleCard, 'two'),
+      matching: find.byTooltip('取消默认规则'),
+    ));
+    await tester.pumpAndSettle();
+    expect(controller.defaultPluginNames, ['one']);
+    expect(find.text('默认规则'), findsOneWidget);
     await tester.tap(find.byTooltip('取消默认规则'));
     await tester.pumpAndSettle();
-    expect(controller.defaultPluginName, isNull);
+    expect(controller.defaultPluginNames, isEmpty);
     expect(find.text('默认规则'), findsNothing);
     await tester.tap(find.byTooltip('two 的更多操作'));
     await tester.pumpAndSettle();

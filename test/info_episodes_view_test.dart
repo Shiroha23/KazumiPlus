@@ -57,7 +57,7 @@ void main() {
   Widget view({
     bool active = true,
     double textScale = 1,
-    Plugin? defaultPlugin,
+    List<Plugin> defaultPlugins = const [],
     Future<OnlineVideoPlaybackArgs?> Function()? choose,
     ValueChanged<OnlineVideoPlaybackArgs>? play,
   }) => MaterialApp(
@@ -68,7 +68,7 @@ void main() {
     home: Scaffold(
       body: InfoEpisodesView(
         bangumiItem: item,
-        defaultPlugin: defaultPlugin,
+        defaultPlugins: defaultPlugins,
         isActive: active,
         onChooseSource: choose ?? () async => null,
         onPlay: play ?? (_) {},
@@ -85,10 +85,10 @@ void main() {
     plugin.roads.first.identifier.addAll([
       for (var episode = 3; episode <= 100; episode++) 'EP $episode',
     ]);
-    await tester.pumpWidget(view(active: false, defaultPlugin: plugin));
+    await tester.pumpWidget(view(active: false, defaultPlugins: [plugin]));
     await tester.pump(const Duration(milliseconds: 16));
     expect(plugin.searches, 0);
-    await tester.pumpWidget(view(defaultPlugin: plugin));
+    await tester.pumpWidget(view(defaultPlugins: [plugin]));
     await tester.pumpAndSettle();
     expect(plugin.searches, 1);
     expect(find.text('EP 2'), findsOneWidget);
@@ -118,8 +118,8 @@ void main() {
       ).every((box) => box.color.a == 0),
       isTrue,
     );
-    await tester.pumpWidget(view(active: false, defaultPlugin: plugin));
-    await tester.pumpWidget(view(defaultPlugin: plugin));
+    await tester.pumpWidget(view(active: false, defaultPlugins: [plugin]));
+    await tester.pumpWidget(view(defaultPlugins: [plugin]));
     await tester.pumpAndSettle();
     expect(plugin.searches, 1);
   });
@@ -127,12 +127,12 @@ void main() {
   testWidgets('default source shows loading before tab activation without flashing source selection',
       (tester) async {
     plugin.gate = Completer<void>();
-    await tester.pumpWidget(view(active: false, defaultPlugin: plugin));
+    await tester.pumpWidget(view(active: false, defaultPlugins: [plugin]));
     expect(plugin.searches, 0);
     expect(find.text('选择播放来源以查看剧集'), findsNothing);
     expect(find.text('正在加载剧集'), findsOneWidget);
 
-    await tester.pumpWidget(view(defaultPlugin: plugin));
+    await tester.pumpWidget(view(defaultPlugins: [plugin]));
     for (var frame = 0; frame < 12; frame++) {
       await tester.pump(const Duration(milliseconds: 16));
       expect(find.text('选择播放来源以查看剧集'), findsNothing);
@@ -152,7 +152,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      await tester.pumpWidget(view(defaultPlugin: plugin, textScale: layout.scale));
+      await tester.pumpWidget(view(defaultPlugins: [plugin], textScale: layout.scale));
       await tester.pumpAndSettle();
       final count = find.text('全部剧集 · 2 集');
       expect(find.ancestor(of: count,
@@ -188,7 +188,7 @@ void main() {
     (tester) async {
       OnlineVideoPlaybackArgs? played;
       await tester.pumpWidget(
-        view(defaultPlugin: plugin, play: (value) => played = value),
+        view(defaultPlugins: [plugin], play: (value) => played = value),
       );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Line 1'));
@@ -205,7 +205,7 @@ void main() {
 
   testWidgets('failed default source can be retried', (tester) async {
     plugin.error = const SearchErrorException('default');
-    await tester.pumpWidget(view(defaultPlugin: plugin));
+    await tester.pumpWidget(view(defaultPlugins: [plugin]));
     await tester.pumpAndSettle();
     expect(find.text('暂时无法加载剧集'), findsOneWidget);
     plugin.error = null;
@@ -217,7 +217,7 @@ void main() {
 
   testWidgets('disposing cancels pending episode loading', (tester) async {
     plugin.gate = Completer<void>();
-    await tester.pumpWidget(view(defaultPlugin: plugin));
+    await tester.pumpWidget(view(defaultPlugins: [plugin]));
     await tester.pump();
     expect(find.text('正在加载剧集'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
@@ -245,7 +245,7 @@ void main() {
           ],
           body: InfoEpisodesView(
             bangumiItem: item,
-            defaultPlugin: plugin,
+            defaultPlugins: [plugin],
             isActive: true,
             onChooseSource: () async => null,
             onPlay: (args) => played = args,
@@ -287,7 +287,7 @@ void main() {
             ],
             body: InfoEpisodesView(
               bangumiItem: item,
-              defaultPlugin: plugin,
+              defaultPlugins: [plugin],
               isActive: true,
               onChooseSource: () async => null,
               onPlay: (_) {},

@@ -1,8 +1,37 @@
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/pages/video/video_playback_args.dart';
 import 'package:kazumi/plugins/plugins.dart';
+import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart'
     show RuleCancelToken;
+
+/// Tries preferred rules in their configured order, stopping at the first source
+/// with a usable playlist. Cancellation stops the whole chain.
+Future<OnlineVideoPlaybackArgs> resolveDefaultPluginsPlayback({
+  required Iterable<Plugin> plugins,
+  required BangumiItem bangumiItem,
+  RuleCancelToken? cancelToken,
+}) async {
+  Object? lastError;
+  StackTrace? lastStackTrace;
+  for (final plugin in List<Plugin>.of(plugins)) {
+    if (cancelToken?.isCancelled ?? false) throw cancelToken!.cancelError!;
+    try {
+      return await resolveDefaultPluginPlayback(
+        plugin: plugin,
+        bangumiItem: bangumiItem,
+        cancelToken: cancelToken,
+      );
+    } catch (error, stackTrace) {
+      if (cancelToken?.isCancelled ?? false) throw cancelToken!.cancelError!;
+      lastError = error;
+      lastStackTrace = stackTrace;
+      KazumiLogger().w('Default rule ${plugin.name} unavailable', error: error);
+    }
+  }
+  if (lastError != null) Error.throwWithStackTrace(lastError, lastStackTrace!);
+  throw StateError('No default rules configured');
+}
 
 /// Resolves the default rule directly into the existing player entry point.
 Future<OnlineVideoPlaybackArgs> resolveDefaultPluginPlayback({

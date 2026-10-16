@@ -90,25 +90,32 @@ abstract class _PluginsController with Store {
   @observable
   ObservableList<PluginHTTPItem> pluginHTTPList = ObservableList.of([]);
 
-  @readonly
-  String? _defaultPluginName;
+  final _defaultPluginNames = ObservableSet<String>();
 
   bool isDefaultPlugin(Plugin plugin) =>
-      _defaultPluginName != null &&
-      pluginNameKey(plugin.name) == pluginNameKey(_defaultPluginName!);
+      _defaultPluginNames.contains(pluginNameKey(plugin.name));
 
-  Plugin? get defaultPlugin => pluginList.where(isDefaultPlugin).firstOrNull;
+  List<Plugin> get defaultPlugins =>
+      pluginList.where(isDefaultPlugin).toList(growable: false);
 
-  Future<void> setDefaultPlugin(Plugin? plugin) {
+  List<String> get defaultPluginNames =>
+      defaultPlugins.map((plugin) => plugin.name).toList(growable: false);
+
+  Future<void> setDefaultPlugin(Plugin plugin, {bool enabled = true}) {
     return _mutateAndPersist(() {
-      if (plugin != null &&
+      if (enabled &&
           !pluginList.any(
             (candidate) =>
                 pluginNameKey(candidate.name) == pluginNameKey(plugin.name),
           )) {
         throw ArgumentError('Default rule must be installed');
       }
-      _defaultPluginName = plugin?.name;
+      final name = pluginNameKey(plugin.name);
+      if (enabled) {
+        _defaultPluginNames.add(name);
+      } else {
+        _defaultPluginNames.remove(name);
+      }
     }, errorMessage: 'Plugin: failed to persist default rule');
   }
 
@@ -126,13 +133,15 @@ abstract class _PluginsController with Store {
     final pluginsFile = File('${directory.path}/$_pluginsFileName');
     _pluginsFile = pluginsFile;
     pluginList.clear();
-    _defaultPluginName = null;
+    _defaultPluginNames.clear();
     if (await pluginsFile.exists()) {
       final List<dynamic> json = jsonDecode(await pluginsFile.readAsString());
       for (final item in json) {
         final plugin = Plugin.fromJson(item);
         pluginList.add(plugin);
-        if (item['isDefault'] == true) _defaultPluginName ??= plugin.name;
+        if (item['isDefault'] == true) {
+          _defaultPluginNames.add(pluginNameKey(plugin.name));
+        }
       }
       KazumiLogger().i('Plugin: Current Plugin number: ${pluginList.length}');
     } else {
@@ -209,17 +218,21 @@ abstract class _PluginsController with Store {
     required String errorMessage,
   }) async {
     final previous = List<Plugin>.from(pluginList);
-    final previousDefault = _defaultPluginName;
+    final previousDefaults = Set<String>.of(_defaultPluginNames);
     try {
       final result = mutate();
-      _defaultPluginName = pluginList.where(isDefaultPlugin).firstOrNull?.name;
+      _defaultPluginNames.retainAll(
+        pluginList.map((plugin) => pluginNameKey(plugin.name)),
+      );
       await _savePlugins();
       return result;
     } catch (error, stackTrace) {
       pluginList
         ..clear()
         ..addAll(previous);
-      _defaultPluginName = previousDefault;
+      _defaultPluginNames
+        ..clear()
+        ..addAll(previousDefaults);
       _errorReporter(errorMessage, error, stackTrace);
       rethrow;
     }

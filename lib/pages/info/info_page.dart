@@ -321,8 +321,8 @@ class _InfoPageState extends State<InfoPage>
       );
       return;
     }
-    final plugin = widget.pluginsController.defaultPlugin;
-    if (plugin == null) {
+    final plugins = widget.pluginsController.defaultPlugins;
+    if (plugins.isEmpty) {
       _showSourceSheet();
       return;
     }
@@ -331,11 +331,11 @@ class _InfoPageState extends State<InfoPage>
     await dialogs.run((task) async {
       final cancelToken = RuleCancelToken();
       final args = await task.loading(
-        message: '正在使用 ${plugin.name} 获取播放来源',
+        message: '正在按默认规则顺序获取播放来源',
         barrierDismissible: isDesktop(),
         onCancel: cancelToken.cancel,
-        action: () => resolveDefaultPluginPlayback(
-          plugin: plugin,
+        action: () => resolveDefaultPluginsPlayback(
+          plugins: plugins,
           bangumiItem: infoController.bangumiItem,
           cancelToken: cancelToken,
         ),
@@ -523,7 +523,7 @@ class _InfoPageState extends State<InfoPage>
             isLoading: showBangumiInfoSkeleton,
             episodesView: InfoEpisodesView(
               bangumiItem: infoController.bangumiItem,
-              defaultPlugin: widget.pluginsController.defaultPlugin,
+              defaultPlugins: widget.pluginsController.defaultPlugins,
               isActive: infoTabController.index == 1,
               onChooseSource: _chooseEpisodeSource,
               onPlay: (args) => context.pushNamed('/video/', arguments: args),
