@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
-import 'package:kazumi/bean/card/bangumi_card.dart';
+import 'package:kazumi/bean/card/bangumi_poster_grid.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/pages/popular/popular_controller.dart';
 import 'package:kazumi/pages/popular/popular_page.dart';
@@ -62,7 +62,7 @@ void main() {
             MaterialApp(home: PopularPage(controller: controller)),
           );
           expect(
-            find.byType(BangumiCardV),
+            find.byType(BangumiPosterCard),
             findsNWidgets(initiallyEmpty ? 0 : 1),
           );
 
@@ -73,7 +73,7 @@ void main() {
           // No navigation, window resize, or parent rebuild is needed.
           expect(find.text('番剧 2'), findsOneWidget);
           expect(
-            find.byType(BangumiCardV),
+            find.byType(BangumiPosterCard),
             findsNWidgets(initiallyEmpty ? 1 : 2),
           );
           expect(find.byType(LinearProgressIndicator), findsNothing);
@@ -99,7 +99,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(controller.currentTag, '原创');
-    expect(find.byType(BangumiCardV), findsNothing);
+    expect(find.byType(BangumiPosterCard), findsNothing);
 
     controller.response.complete([_item(2)]);
     await tester.pumpAndSettle();

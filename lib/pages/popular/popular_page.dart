@@ -6,7 +6,8 @@ import 'package:kazumi/bean/widget/bangumi_mirror_error_widget.dart';
 import 'package:kazumi/bean/widget/kazumi_menu.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/pages/popular/popular_controller.dart';
-import 'package:kazumi/bean/card/bangumi_card.dart';
+import 'package:kazumi/bean/card/bangumi_poster_grid.dart';
+import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/utils/constants.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kazumi/services/logging/logger.dart';
@@ -145,50 +146,14 @@ class _PopularPageState extends State<PopularPage> {
   }
 
   Widget contentGrid(List<BangumiItem> bangumiList) {
-    int crossCount = 3;
-    if (MediaQuery.sizeOf(context).width > LayoutBreakpoint.compact['width']!) {
-      crossCount = 5;
-    }
-    if (MediaQuery.sizeOf(context).width > LayoutBreakpoint.medium['width']!) {
-      crossCount = 6;
-    }
     return SliverPadding(
       padding: const EdgeInsets.all(8),
       sliver: SliverLayoutBuilder(
-        builder: (context, constraints) {
-          const spacing = 12.0;
-          final cardWidth =
-              (constraints.crossAxisExtent - spacing * (crossCount - 1)) /
-                  crossCount;
-          final titlePainter = TextPainter(
-            text: TextSpan(
-              text: '番剧',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.3,
-                  ),
-            ),
-            textDirection: Directionality.of(context),
-            textScaler:
-                MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.1),
-          );
-          // Match BangumiContent's three title lines and vertical padding.
-          final titleHeight =
-              (titlePainter.preferredLineHeight * 3 + 4).ceilToDouble();
-          titlePainter.dispose();
-          return SliverGrid(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              mainAxisSpacing: spacing,
-              crossAxisSpacing: spacing,
-              crossAxisCount: crossCount,
-              mainAxisExtent: cardWidth / 0.65 + titleHeight,
-            ),
-            delegate:
-                SliverChildBuilderDelegate((BuildContext context, int index) {
-              return BangumiCardV(bangumiItem: bangumiList[index]);
-            }, childCount: bangumiList.length),
-          );
-        },
+        builder: (context, constraints) => BangumiPosterGrid(
+          items: bangumiList,
+          width: constraints.crossAxisExtent,
+          showRating: GStorage.getSetting(SettingsKeys.showRating),
+        ),
       ),
     );
   }
