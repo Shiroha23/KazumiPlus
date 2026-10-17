@@ -107,6 +107,8 @@ class MainActivity: AudioServiceActivity() {
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger,
+            "com.predidit.kazumi/website_data").setMethodCallHandler(WebsiteDataHandler())
         downloadDirectoryHandler = DownloadDirectoryHandler(this)
         downloadDirectoryChannel = MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger, DownloadDirectoryHandler.CHANNEL

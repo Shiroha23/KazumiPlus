@@ -74,6 +74,7 @@ void main() async {
   }
   await DownloadDirectoryService().restoreAccess();
   PluginCookieManager.instance.browserCookieReader = WebsiteBrowser.cookiesFor;
+  PluginCookieManager.instance.browserDataCleaner = WebsiteBrowser.clearSiteData;
   await PluginCookieManager.instance.init(await getApplicationSupportDirectory());
   final showWindowButton = DesktopWindowConfig.showWindowButton;
   if (isDesktop()) {

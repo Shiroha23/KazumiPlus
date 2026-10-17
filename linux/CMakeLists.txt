@@ -70,6 +70,7 @@ add_executable(${BINARY_NAME}
   "external_player_portal.cc"
   "main.cc"
   "my_application.cc"
+  "website_data.cc"
   "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc"
 )
 
@@ -98,6 +99,11 @@ set_target_properties(${BINARY_NAME}
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
 include(flutter/generated_plugins.cmake)
+pkg_check_modules(WebsiteWebKit IMPORTED_TARGET webkit2gtk-4.1)
+if(NOT WebsiteWebKit_FOUND)
+  pkg_check_modules(WebsiteWebKit REQUIRED IMPORTED_TARGET webkit2gtk-4.0)
+endif()
+target_link_libraries(${BINARY_NAME} PRIVATE PkgConfig::WebsiteWebKit)
 
 
 # === Installation ===

@@ -2,6 +2,7 @@
 #include "fullscreen_utils.h"
 #include "external_player_utils.h"
 #include "shortcut_utils.h"
+#include "website_data.h"
 
 #include <optional>
 #include <flutter/method_channel.h>
@@ -78,6 +79,7 @@ bool FlutterWindow::OnCreate() {
 
   // Register Shortcut MethodChannel
   RegisterShortcutChannel();
+  RegisterWebsiteDataChannel(flutter_controller_->engine()->messenger(), GetHandle());
 
   return true;
 }
@@ -105,6 +107,9 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
   }
 
   switch (message) {
+    case kWebsiteDataCompletionMessage:
+      CompleteWebsiteDataDeletion(lparam);
+      return 0;
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
       break;

@@ -7,14 +7,21 @@ import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/utils/async_serial_queue.dart';
 
 typedef BrowserCookieReader = Future<String> Function(Uri uri);
+typedef BrowserDataCleaner =
+    Future<void> Function(Uri site, List<String> origins);
 
 /// A saved website registration, not proof that the website is still logged in.
 /// Authentication stays in the platform browser's persistent data store.
 class WebsiteLoginSession {
-  const WebsiteLoginSession({required this.site, required this.userAgent});
+  const WebsiteLoginSession({
+    required this.site,
+    required this.userAgent,
+    this.origins = const [],
+  });
 
   final Uri site;
   final String userAgent;
+  final List<String> origins;
 
   String get host => PluginCookieManager.siteHost(site);
 }
@@ -22,10 +29,11 @@ class WebsiteLoginSession {
 /// Website logins are shared by host, independently of installed rule names.
 /// Captcha snapshots remain temporary and scoped to the rule that captured them.
 class PluginCookieManager extends ChangeNotifier {
-  PluginCookieManager({this.browserCookieReader});
+  PluginCookieManager({this.browserCookieReader, this.browserDataCleaner});
   static final PluginCookieManager instance = PluginCookieManager();
 
   BrowserCookieReader? browserCookieReader;
+  BrowserDataCleaner? browserDataCleaner;
   final Map<String, WebsiteLoginSession> _loginSites = {};
   final AsyncSerialQueue _writes = AsyncSerialQueue();
   File? _sessionsFile;
@@ -66,6 +74,10 @@ class PluginCookieManager extends ChangeNotifier {
           userAgent: value['userAgent'] is String
               ? (value['userAgent'] as String).trim()
               : '',
+          origins: _siteOrigins(
+            uri,
+            value['origins'] is List ? value['origins'] as List : const [],
+          ),
         );
         final previous = _loginSites[session.host];
         _loginSites[session.host] =
@@ -127,14 +139,32 @@ class PluginCookieManager extends ChangeNotifier {
         'version': 2,
         'sites': [
           for (final session in savedSites)
-            {'site': session.site.toString(), 'userAgent': session.userAgent},
+            {
+              'site': session.site.toString(),
+              'userAgent': session.userAgent,
+              if (session.origins.isNotEmpty) 'origins': session.origins,
+            },
         ],
       }),
       flush: true,
     );
   }
 
-  Future<void> saveLoginSession(String siteUrl, String userAgent) async {
+  static List<String> _siteOrigins(Uri site, Iterable<dynamic> origins) {
+    final result = <String>{};
+    for (final origin in origins) {
+      if (origin is! String) continue;
+      final uri = Uri.tryParse(origin);
+      if (uri != null && isSiteHost(site, uri)) result.add(uri.origin);
+    }
+    return List.unmodifiable(result);
+  }
+
+  Future<void> saveLoginSession(
+    String siteUrl,
+    String userAgent, {
+    Iterable<String> origins = const [],
+  }) async {
     final site = Uri.parse(siteUrl);
     if (!isWebsiteUrl(site)) throw const FormatException('无效的网站地址');
     await _writes.run(() async {
@@ -145,6 +175,12 @@ class PluginCookieManager extends ChangeNotifier {
         userAgent: userAgent.trim().isEmpty
             ? previous?.userAgent ?? ''
             : userAgent.trim(),
+        origins: _siteOrigins(site, [
+          if (previous != null && previous.site.origin != site.origin)
+            previous.site.origin,
+          ...?previous?.origins,
+          ...origins,
+        ]),
       );
       try {
         await _persist();
@@ -157,15 +193,55 @@ class PluginCookieManager extends ChangeNotifier {
         rethrow;
       }
       // Never let a snapshot captured before website logout resurrect cookies.
-      for (final entry in _captchaSites.entries.toList()) {
-        if (isSiteHost(site, entry.value)) {
-          _jars.remove(entry.key);
-          _userAgents.remove(entry.key);
-          _captchaSites.remove(entry.key);
-        }
+      _clearCaptchaFor(site);
+      notifyListeners();
+    });
+  }
+
+  /// Clear actual browser credentials before removing the shared registration.
+  Future<void> deleteAccountData(String siteUrl) async {
+    final site = Uri.parse(siteUrl);
+    if (!isWebsiteUrl(site)) throw const FormatException('无效的网站地址');
+    await _writes.run(() async {
+      final host = siteHost(site);
+      final previous = _loginSites[host];
+      final target = previous?.site ?? site;
+      final related = {
+        for (final session in _loginSites.values)
+          if (isSiteHost(target, session.site)) session.host: session,
+      };
+      final origins = <String>{
+        for (final session in related.values) ...[
+          session.site.origin,
+          ...session.origins,
+        ],
+      };
+      final cleaner = browserDataCleaner;
+      if (cleaner == null) throw StateError('网站账号清理功能不可用');
+      await cleaner(target, origins.toList());
+      // Metadata write failures must not resurrect credentials already deleted.
+      _clearCaptchaFor(target);
+      for (final key in related.keys) {
+        _loginSites.remove(key);
+      }
+      try {
+        await _persist();
+      } catch (_) {
+        _loginSites.addAll(related);
+        rethrow;
       }
       notifyListeners();
     });
+  }
+
+  void _clearCaptchaFor(Uri site) {
+    for (final entry in _captchaSites.entries.toList()) {
+      if (isSiteHost(site, entry.value)) {
+        _jars.remove(entry.key);
+        _userAgents.remove(entry.key);
+        _captchaSites.remove(entry.key);
+      }
+    }
   }
 
   Future<Map<String, String>> headersFor(

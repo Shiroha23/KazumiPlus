@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
 import 'package:kazumi/pages/settings/website_login_settings.dart';
@@ -37,7 +38,12 @@ void main() {
       rule('新规则', 'https://example.org/'),
       rule('接口规则', 'https://api.example.org/'),
     ]);
-    final manager = PluginCookieManager();
+    final deletedSites = <String>[];
+    final manager = PluginCookieManager(
+      browserDataCleaner: (site, _) async {
+        deletedSites.add(site.host);
+      },
+    );
     await manager.saveLoginSession('https://www.example.org/', 'browser-ua');
     await manager.saveLoginSession('https://removed.org/', 'browser-ua');
     String? opened;
@@ -60,7 +66,7 @@ void main() {
     expect(find.textContaining('暂无关联规则'), findsOneWidget);
     expect(find.text('已登录'), findsNothing);
 
-    await tester.tap(find.text('登录 / 管理账号').first);
+    await tester.tap(find.text('example.org'));
     await tester.pumpAndSettle();
     expect(opened, 'https://www.example.org/');
 
@@ -77,6 +83,28 @@ void main() {
       manager.userAgentFor('重新导入', url: 'https://example.org/'),
       'browser-ua',
     );
+
+    await tester.tap(find.byTooltip('删除 removed.org 的账号信息'));
+    await tester.pumpAndSettle();
+    expect(find.text('removed.org'), findsNothing);
+    expect(manager.savedSites, hasLength(1));
+    expect(opened, 'https://www.example.org/');
+
+    await tester.tap(find.byTooltip('删除 example.org 的账号信息'));
+    await tester.pumpAndSettle();
+    expect(manager.savedSites, isEmpty);
+    expect(find.text('example.org'), findsOneWidget);
+    expect(find.textContaining('尚未保存会话'), findsOneWidget);
+    expect(find.byTooltip('删除 example.org 的账号信息'), findsOneWidget);
+    expect(deletedSites, ['removed.org', 'www.example.org']);
+
+    manager.browserDataCleaner = (_, _) async => throw MissingPluginException();
+    await manager.saveLoginSession('https://example.org/', 'browser-ua');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('删除 example.org 的账号信息'));
+    await tester.pumpAndSettle();
+    expect(find.text('当前运行程序不支持删除账号信息，请退出并启动新版客户端'), findsOneWidget);
+    expect(manager.savedSites, hasLength(1));
   });
 
   testWidgets('saving updates the list and adding a site validates URLs', (
@@ -99,7 +127,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.textContaining('尚未保存会话'), findsOneWidget);
-    await tester.tap(find.text('登录 / 管理账号'));
+    await tester.tap(find.text('example.org'));
     await tester.pumpAndSettle();
     expect(find.textContaining('尚未保存会话'), findsNothing);
     expect(find.textContaining('已保存会话'), findsOneWidget);
@@ -132,6 +160,7 @@ void main() {
       rule('同站的第二条规则', 'https://www.example.org/'),
     ]);
     final manager = PluginCookieManager();
+    await manager.saveLoginSession('https://example.org/', 'ua');
     await tester.pumpWidget(
       page(
         controller,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
 import 'package:kazumi/bean/settings/settings_list.dart';
 import 'package:kazumi/pages/plugin_editor/website_login_page.dart';
@@ -78,6 +80,31 @@ class _WebsiteLoginSettingsPageState extends State<WebsiteLoginSettingsPage> {
     if (site != null && mounted) await _open(site);
   }
 
+  Future<void> _deleteSession(Uri site) async {
+    if (_opening) return;
+    setState(() => _opening = true);
+    try {
+      await _manager.deleteAccountData(site.toString());
+      if (mounted) {
+        KazumiDialog.showToast(context: context, message: '已删除该网站的账号信息');
+      }
+    } catch (error) {
+      if (mounted) {
+        KazumiDialog.showToast(
+          context: context,
+          message: error is MissingPluginException
+              ? '当前运行程序不支持删除账号信息，请退出并启动新版客户端'
+              : error is PlatformException &&
+                    error.code == 'UNSUPPORTED_WEBVIEW'
+              ? '请先更新 Android 系统 WebView，再删除账号信息'
+              : '账号信息未能完全删除，请重试',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _opening = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => SettingsDetailScaffold(
     title: const Text('登录管理'),
@@ -110,11 +137,10 @@ class _WebsiteLoginSettingsPageState extends State<WebsiteLoginSettingsPage> {
                 ),
               for (final entry in sites)
                 SettingsSection(
-                  title: Text(PluginCookieManager.siteHost(entry.site)),
                   tiles: [
                     SettingsTile(
                       leading: Icons.account_circle_outlined,
-                      title: const Text('登录 / 管理账号'),
+                      title: Text(PluginCookieManager.siteHost(entry.site)),
                       description: Text(
                         [
                           entry.saved ? '已保存会话' : '尚未保存会话',
@@ -124,7 +150,20 @@ class _WebsiteLoginSettingsPageState extends State<WebsiteLoginSettingsPage> {
                             '共用规则：${entry.rules.join('、')}',
                         ].join('\n'),
                       ),
-                      trailing: const Icon(Icons.chevron_right_rounded),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.chevron_right_rounded),
+                          IconButton(
+                            tooltip:
+                                '删除 ${PluginCookieManager.siteHost(entry.site)} 的账号信息',
+                            onPressed: _opening
+                                ? null
+                                : () => _deleteSession(entry.site),
+                            icon: const Icon(Icons.delete_outline_rounded),
+                          ),
+                        ],
+                      ),
                       enabled: !_opening,
                       onPressed: (_) => _open(entry.site),
                     ),
@@ -132,7 +171,7 @@ class _WebsiteLoginSettingsPageState extends State<WebsiteLoginSettingsPage> {
                 ),
               const Padding(
                 padding: EdgeInsets.fromLTRB(32, 0, 32, 12),
-                child: Text('删除规则会保留网站会话；在网站内退出账号会对同站规则一起生效。'),
+                child: Text('右侧删除按钮清除该网站在本机客户端中保存的登录数据和会话记录。同站规则需要重新登录。'),
               ),
             ],
           );

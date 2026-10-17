@@ -56,6 +56,10 @@ add_subdirectory("runner")
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
 include(flutter/generated_plugins.cmake)
+add_dependencies(${BINARY_NAME} webview_windows_DEPENDENCIES_DOWNLOAD)
+if(TARGET website_data_test)
+  add_dependencies(website_data_test webview_windows_DEPENDENCIES_DOWNLOAD)
+endif()
 
 
 # === Installation ===

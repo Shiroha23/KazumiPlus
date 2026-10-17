@@ -278,13 +278,18 @@ void main() {
   );
 
   test(
-    'concurrent website saves persist all sites and notify observers',
+    'website saves and deletion persist independently and notify observers',
     () async {
       final directory = await Directory.systemTemp.createTemp(
         'kazumi-concurrent-',
       );
       addTearDown(() => directory.delete(recursive: true));
-      final manager = PluginCookieManager();
+      final cleaned = <String>[];
+      final manager = PluginCookieManager(
+        browserDataCleaner: (site, origins) async {
+          cleaned.add(site.host);
+        },
+      );
       await manager.init(directory);
       var changes = 0;
       manager.addListener(() => changes++);
@@ -296,6 +301,27 @@ void main() {
       await restored.init(directory);
       expect(restored.savedSites, hasLength(2));
       expect(changes, 2);
+
+      await manager.saveFromWebView(
+        'old rule',
+        'https://first.org/',
+        'stale=token',
+      );
+      await manager.deleteAccountData('https://www.first.org/');
+      expect(cleaned, ['first.org']);
+      expect(changes, 3);
+      expect(manager.savedSites.single.host, 'second.org');
+      expect(
+        await manager.headersFor('old rule', 'https://first.org/play', {}),
+        isEmpty,
+      );
+      expect(
+        manager.userAgentFor('new rule', url: 'https://first.org'),
+        isNull,
+      );
+      final afterDeletion = PluginCookieManager();
+      await afterDeletion.init(directory);
+      expect(afterDeletion.savedSites.single.host, 'second.org');
     },
   );
 
@@ -311,4 +337,35 @@ void main() {
       );
     }
   });
+
+  test(
+    'failed browser deletion preserves registration and reports failure',
+    () async {
+      final manager = PluginCookieManager(
+        browserDataCleaner: (_, _) async {
+          throw StateError('native deletion failed');
+        },
+      );
+      await manager.saveLoginSession(
+        'https://example.org',
+        'ua',
+        origins: [
+          'https://api.example.org/account?secret=not-persisted',
+          'https://other.org',
+        ],
+      );
+      expect(manager.savedSites.single.origins, ['https://api.example.org']);
+      await manager.saveLoginSession('https://example.org:8443', 'ua');
+      expect(manager.savedSites.single.origins, [
+        'https://example.org',
+        'https://api.example.org',
+      ]);
+      await expectLater(
+        manager.deleteAccountData('https://example.org'),
+        throwsStateError,
+      );
+      expect(manager.savedSites.single.host, 'example.org');
+      expect(manager.userAgentFor('rule', url: 'https://example.org'), 'ua');
+    },
+  );
 }

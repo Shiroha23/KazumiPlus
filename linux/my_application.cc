@@ -7,6 +7,7 @@
 #endif
 
 #include "external_player_portal.h"
+#include "website_data.h"
 #include "flutter/generated_plugin_registrant.h"
 
 struct _MyApplication {
@@ -14,6 +15,7 @@ struct _MyApplication {
   char** dart_entrypoint_arguments;
   FlMethodChannel* intent_method_channel;
   FlMethodChannel* storage_method_channel;
+  FlMethodChannel* website_data_channel;
 };
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
@@ -183,6 +185,8 @@ static void my_application_activate(GApplication* application) {
   gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
+  self->website_data_channel = RegisterWebsiteDataChannel(
+      fl_engine_get_binary_messenger(fl_view_get_engine(view)));
 
   g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
   self->intent_method_channel = fl_method_channel_new(
@@ -230,6 +234,7 @@ static void my_application_dispose(GObject* object) {
   g_clear_pointer(&self->dart_entrypoint_arguments, g_strfreev);
   g_clear_object(&self->intent_method_channel);
   g_clear_object(&self->storage_method_channel);
+  g_clear_object(&self->website_data_channel);
   G_OBJECT_CLASS(my_application_parent_class)->dispose(object);
 }
 

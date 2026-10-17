@@ -51,6 +51,7 @@ class _WebsiteLoginPageState extends State<WebsiteLoginPage> {
   bool _loading = true;
   bool _saving = false;
   String? _error;
+  final Set<String> _visitedOrigins = {};
 
   String get _siteHost =>
       PluginCookieManager.siteHost(Uri.parse(widget.siteUrl));
@@ -172,6 +173,9 @@ class _WebsiteLoginPageState extends State<WebsiteLoginPage> {
     final uri = Uri.tryParse(url);
     if (uri != null && PluginCookieManager.isWebsiteUrl(uri)) {
       _address.text = url;
+      if (PluginCookieManager.isSiteHost(Uri.parse(widget.siteUrl), uri)) {
+        _visitedOrigins.add(uri.origin);
+      }
     }
   }
 
@@ -209,6 +213,7 @@ class _WebsiteLoginPageState extends State<WebsiteLoginPage> {
       await PluginCookieManager.instance.saveLoginSession(
         widget.siteUrl,
         result?.toString() ?? '',
+        origins: _visitedOrigins,
       );
       if (mounted) Navigator.of(context).pop(true);
     } catch (error, stackTrace) {
@@ -272,9 +277,7 @@ class _WebsiteLoginPageState extends State<WebsiteLoginPage> {
                 ),
                 IconButton(
                   tooltip: '网站首页',
-                  onPressed: _ready
-                      ? () => _navigate(widget.siteUrl)
-                      : null,
+                  onPressed: _ready ? () => _navigate(widget.siteUrl) : null,
                   icon: const Icon(Icons.home_outlined),
                 ),
               ],

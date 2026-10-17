@@ -4,6 +4,7 @@ import 'package:kazumi/plugins/playback_rule_config.dart';
 import 'package:kazumi/services/video_source/rule_playback_service.dart';
 
 import 'package:kazumi/webview/video/video_webview_controller.dart';
+import 'package:kazumi/webview/login/website_browser.dart';
 import 'package:kazumi/services/video_source/video_source_service.dart';
 
 /// WebView 视频源解析服务
@@ -13,6 +14,7 @@ import 'package:kazumi/services/video_source/video_source_service.dart';
 /// 仅在 [dispose] 时才真正销毁 WebView。
 class WebViewVideoSourceService implements IVideoSourceService {
   VideoWebviewController? _webview;
+  int _browserGeneration = WebsiteBrowser.accountDataGeneration;
   StreamSubscription? _logSubscription;
 
   // 单个服务实例持有一个 WebView，因此解析任务按实例串行执行。
@@ -106,6 +108,14 @@ class WebViewVideoSourceService implements IVideoSourceService {
       }
     }
 
+    if (_browserGeneration != WebsiteBrowser.accountDataGeneration) {
+      await _logSubscription?.cancel();
+      _logSubscription = null;
+      await _webview?.dispose();
+      _webview = null;
+      _browserGeneration = WebsiteBrowser.accountDataGeneration;
+      request.throwIfNotCurrent(_activeRequest);
+    }
     if (_webview == null) {
       _webview = VideoWebviewControllerFactory.getController();
       await _webview!.init();
