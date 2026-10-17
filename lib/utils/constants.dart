@@ -52,6 +52,46 @@ final PageTransitionsTheme settingsPageTransitionsTheme = PageTransitionsTheme(
   },
 );
 
+// Preserve the fullscreen entrance animation and add only the covered page fade.
+final PageTransitionsTheme transparentWindowPageTransitionsTheme =
+    PageTransitionsTheme(
+      builders: {
+        ..._pageTransitionBuilders,
+        TargetPlatform.linux: const _FadeUpwardsWithCoveredPageFade(),
+        TargetPlatform.windows: const _FadeUpwardsWithCoveredPageFade(),
+      },
+    );
+
+class _FadeUpwardsWithCoveredPageFade extends FadeUpwardsPageTransitionsBuilder {
+  const _FadeUpwardsWithCoveredPageFade();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T>? route,
+    BuildContext? context,
+    Animation<double> animation,
+    Animation<double>? secondaryAnimation,
+    Widget child,
+  ) => FadeTransition(
+    opacity: ReverseAnimation(secondaryAnimation ?? kAlwaysDismissedAnimation),
+    child: super.buildTransitions(
+      route,
+      context,
+      animation,
+      secondaryAnimation,
+      child,
+    ),
+  );
+
+  @override
+  DelegatedTransitionBuilder get delegatedTransition =>
+      (context, animation, secondaryAnimation, allowSnapshotting, child) =>
+          FadeTransition(
+            opacity: ReverseAnimation(secondaryAnimation),
+            child: child,
+          );
+}
+
 /// Layout breakpoint according to google:
 /// https://developer.android.com/develop/ui/compose/layouts/adaptive/use-window-size-classes.
 ///

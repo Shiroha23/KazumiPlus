@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart' as acrylic;
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/utils/async_serial_queue.dart';
+import 'package:kazumi/utils/constants.dart';
 import 'package:window_manager/window_manager.dart';
 
 enum WindowMaterial {
@@ -199,6 +200,7 @@ class WindowEffectService extends ChangeNotifier {
   ThemeData decorateTheme(ThemeData theme) => enabled
       ? theme.copyWith(
           scaffoldBackgroundColor: Colors.transparent,
+          pageTransitionsTheme: transparentWindowPageTransitionsTheme,
           appBarTheme: theme.appBarTheme.copyWith(
             backgroundColor: Colors.transparent,
             surfaceTintColor: Colors.transparent,
