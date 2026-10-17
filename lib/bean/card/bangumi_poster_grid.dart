@@ -103,17 +103,22 @@ class BangumiPosterCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: AspectRatio(
-                aspectRatio: coverAspectRatio,
-                child: LayoutBuilder(
-                  builder: (_, constraints) => NetworkImgLayer(
-                    src: item.images['large'] ?? item.images['common'] ?? '',
-                    width: constraints.maxWidth,
-                    height: constraints.maxHeight,
-                    // Reuse the decoded cover while the window is resized.
-                    decodeWidth: 512,
+            AspectRatio(
+              aspectRatio: coverAspectRatio,
+              child: LayoutBuilder(
+                builder: (_, constraints) => Hero(
+                  tag: item.id,
+                  transitionOnUserGestures: true,
+                  flightShuttleBuilder: NetworkImgLayer.heroFlightShuttleBuilder,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: NetworkImgLayer(
+                      src: item.images['large'] ?? item.images['common'] ?? '',
+                      width: constraints.maxWidth,
+                      height: constraints.maxHeight,
+                      // Reuse the decoded cover while the window is resized.
+                      decodeWidth: 512,
+                    ),
                   ),
                 ),
               ),
