@@ -7,7 +7,7 @@ final popularModule = createModule(
   register: (c) {
     c.route(
       '/',
-      transition: TransitionType.none,
+      transition: TransitionType.material,
       child: (context, state) => PopularPage(
         controller: inject<PopularController>(),
       ),

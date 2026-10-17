@@ -7,7 +7,7 @@ final timelineModule = createModule(
   register: (c) {
     c.route(
       '/',
-      transition: TransitionType.none,
+      transition: TransitionType.material,
       child: (context, state) => TimelinePage(
         controller: inject<TimelineController>(),
       ),

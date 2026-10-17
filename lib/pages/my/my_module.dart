@@ -7,7 +7,7 @@ final myModule = createModule(
   register: (c) {
     c.route(
       '/',
-      transition: TransitionType.none,
+      transition: TransitionType.material,
       child: (context, state) => MyPage(
         controller: inject<MyController>(),
       ),

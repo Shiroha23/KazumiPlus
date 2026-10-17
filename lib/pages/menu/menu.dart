@@ -7,6 +7,7 @@ import 'package:kazumi/navigation.dart';
 import 'package:kazumi/pages/menu/route_visibility.dart';
 import 'package:kazumi/pages/router.dart';
 import 'package:kazumi/services/platform/window_effect_service.dart';
+import 'package:kazumi/utils/constants.dart';
 
 class ScaffoldMenu extends StatefulWidget {
   const ScaffoldMenu({super.key, required this.location});
@@ -123,7 +124,12 @@ class _ScaffoldMenu extends State<ScaffoldMenu> with RouteAware {
     Widget child = NotificationListener<NavigationNotification>(
       // A non-poppable outlet must not override the shell's PopScope state.
       onNotification: (notification) => !notification.canHandlePop,
-      child: RouterOutlet(key: _outletKey),
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          pageTransitionsTheme: settingsPageTransitionsTheme,
+        ),
+        child: RouterOutlet(key: _outletKey),
+      ),
     );
     if (borderRadius != null) {
       child = ClipRRect(borderRadius: borderRadius, child: child);

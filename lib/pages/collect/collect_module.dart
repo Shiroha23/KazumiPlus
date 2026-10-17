@@ -7,7 +7,7 @@ final collectModule = createModule(
   register: (c) {
     c.route(
       '/',
-      transition: TransitionType.none,
+      transition: TransitionType.material,
       child: (context, state) => CollectPage(
         controller: inject<CollectController>(),
       ),

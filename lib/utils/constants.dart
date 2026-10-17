@@ -37,11 +37,11 @@ const _pageTransitionBuilders = <TargetPlatform, PageTransitionsBuilder>{
 const PageTransitionsTheme pageTransitionsTheme2024 =
     PageTransitionsTheme(builders: _pageTransitionBuilders);
 
-// Applied only to the settings navigator; fullscreen routes use the app theme.
+// Shared by the settings and main-tab navigators; fullscreen routes use the app theme.
 final PageTransitionsTheme settingsPageTransitionsTheme = PageTransitionsTheme(
   builders: {
     ..._pageTransitionBuilders,
-    // The settings shell already supplies the background. An opaque transition
+    // The navigation shells already supply the background. An opaque transition
     // scrim would briefly cover translucent desktop window materials.
     TargetPlatform.linux: const FadeForwardsPageTransitionsBuilder(
       backgroundColor: Colors.transparent,
