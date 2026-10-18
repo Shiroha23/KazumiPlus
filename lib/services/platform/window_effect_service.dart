@@ -103,7 +103,7 @@ class WindowEffectService extends ChangeNotifier {
     double opacity = 0.35,
   }) async {
     if (_initialized || materials.length <= 1) return;
-    _opacity = opacity.isFinite ? opacity.clamp(0.15, 0.85) : 0.35;
+    _opacity = opacity.isFinite ? opacity.clamp(0.0, 1.0) : 0.35;
     final saved = WindowMaterial.parse(material);
     _material = materials.contains(saved) ? saved : WindowMaterial.disabled;
     try {
@@ -131,7 +131,7 @@ class WindowEffectService extends ChangeNotifier {
 
   void setOpacity(double value) {
     if (!value.isFinite) return;
-    _opacity = value.clamp(0.15, 0.85);
+    _opacity = value.clamp(0.0, 1.0);
     notifyListeners();
   }
 

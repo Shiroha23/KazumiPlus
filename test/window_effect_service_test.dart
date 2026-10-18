@@ -54,11 +54,15 @@ void main() {
         initializeNative: () async {},
         applyNative: (_, _, _) async {},
       );
-      await effects.initialize(material: 'mica', opacity: 2);
+      await effects.initialize(material: 'mica', opacity: 0);
       expect(effects.material, WindowMaterial.disabled);
-      expect(effects.opacity, 0.85);
+      expect(effects.opacity, 0);
+      effects.setOpacity(2);
+      expect(effects.opacity, 1);
       effects.setOpacity(double.nan);
-      expect(effects.opacity, 0.85);
+      expect(effects.opacity, 1);
+      effects.setOpacity(0);
+      expect(effects.opacity, 0);
       await expectLater(
         effects.setMaterial(WindowMaterial.mica),
         throwsUnsupportedError,
