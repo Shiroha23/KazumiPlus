@@ -176,6 +176,7 @@ void main() {
                     as SliverGridDelegateWithFixedCrossAxisCount)
                 .crossAxisCount;
         final narrowColumns = columns();
+        expect(tester.getRect(find.byType(BangumiPosterCard).first).left, 16);
         final filters = controller.filters;
         if (!rows) {
           final format = tester.getRect(
@@ -188,6 +189,9 @@ void main() {
         }
         tester.view.physicalSize = const Size(1600, 900);
         await tester.pumpAndSettle();
+        final cards = find.byType(BangumiPosterCard);
+        expect(tester.getRect(cards.first).left, 16);
+        expect(1600 - tester.getRect(cards.at(columns() - 1)).right, 16);
         expect(columns(), greaterThan(narrowColumns));
         expect(
           tester
@@ -478,9 +482,27 @@ void main() {
         expect(tester.getRect(find.byType(Drawer)).right, size.width);
       } else {
         expect(
+          tester.getRect(find.byKey(const ValueKey('category-sidebar'))).width,
+          320,
+        );
+        expect(
           tester.getRect(find.byKey(const ValueKey('category-sidebar'))).left,
           greaterThan(size.width / 2),
         );
+      }
+      for (final tag in [
+        '科幻',
+        '战斗',
+        '冒险',
+        '运动',
+        '音乐',
+        '美食',
+        '职场',
+        '漫画改',
+        '游戏改',
+        '小说改',
+      ]) {
+        expect(find.byKey(ValueKey('sidebar-题材-$tag')), findsOneWidget);
       }
 
       Future<void> select(String key) async {
@@ -492,14 +514,14 @@ void main() {
       }
 
       await select('sidebar-类型-剧场版');
-      await select('sidebar-题材-日常');
+      await select('sidebar-题材-科幻');
       await select('sidebar-year-');
       final year = DateTime.now().year;
       await tester.tap(find.text('$year 年').last);
       await tester.pumpAndSettle();
       await select('sidebar-排序-score');
       expect(controller.filters.metaTags, ['剧场版']);
-      expect(controller.filters.tags, ['日常']);
+      expect(controller.filters.tags, ['科幻']);
       expect(controller.filters.dateRange?.start, '$year-01-01');
       expect(controller.filters.sort, 'score');
       expect(calls, 5);
@@ -513,7 +535,7 @@ void main() {
       await _selectLayout(tester, '下拉视图');
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('format-剧场版')), findsOneWidget);
-      expect(find.byKey(const ValueKey('tag-日常')), findsOneWidget);
+      expect(find.byKey(const ValueKey('tag-科幻')), findsOneWidget);
       expect(find.byKey(ValueKey('year-$year')), findsOneWidget);
       expect(find.byKey(const ValueKey('sort-score')), findsOneWidget);
       expect(calls, 5);
@@ -625,16 +647,10 @@ void main() {
         await tester.pumpAndSettle();
         expect(controller.scrollOffset, greaterThan(400));
         expect(find.byTooltip('回到顶部'), findsOneWidget);
-        if (layout == CategoryFilterLayout.sidebar) {
-          expect(
-            tester.getRect(find.byType(FloatingActionButton)).right,
-            lessThan(
-              tester
-                  .getRect(find.byKey(const ValueKey('category-sidebar')))
-                  .left,
-            ),
-          );
-        }
+        final pageRect = tester.getRect(find.byType(Scaffold));
+        final buttonRect = tester.getRect(find.byType(FloatingActionButton));
+        expect(pageRect.right - buttonRect.right, 16);
+        expect(pageRect.bottom - buttonRect.bottom, 16);
         await tester.tap(find.byTooltip('回到顶部'));
         await tester.pumpAndSettle();
         expect(controller.scrollOffset, 0);

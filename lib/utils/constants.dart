@@ -4,6 +4,8 @@ import 'package:kazumi/request/config/api_endpoints.dart';
 
 class StyleString {
   static const double cardSpace = 8;
+  // Matches the recommendation grid's outer and inner cardSpace insets.
+  static const double pageHorizontalPadding = cardSpace * 2;
   static const double safeSpace = 12;
   static BorderRadius mdRadius = BorderRadius.circular(10);
   static const Radius imgRadius = Radius.circular(12);

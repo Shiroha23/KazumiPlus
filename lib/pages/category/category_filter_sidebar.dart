@@ -32,14 +32,13 @@ class _CategoryFilterSidebar extends StatelessWidget {
     color: Theme.of(context).colorScheme.surfaceContainerLow,
     borderRadius: BorderRadius.circular(16),
     clipBehavior: Clip.antiAlias,
-    child: SingleChildScrollView(
-      key: const PageStorageKey('category-sidebar-scroll'),
-      primary: false,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
             children: [
               Expanded(
                 child: Text(
@@ -55,60 +54,72 @@ class _CategoryFilterSidebar extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 16),
-          _options(
-            context,
-            '类型',
-            filters.metaTags.firstOrNull ?? '',
-            {
-              '': '全部',
-              for (final format in _categoryFormats)
-                format: switch (format) {
-                  'TV' => 'TV番组',
-                  '剧场版' => '剧场番组',
-                  _ => format,
-                },
-            },
-            (value) => onChanged(
-              filters.copyWith(metaTags: value.isEmpty ? [] : [value]),
+        ),
+        Flexible(
+          child: SingleChildScrollView(
+            key: const PageStorageKey('category-sidebar-scroll'),
+            primary: false,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _options(
+                  context,
+                  '类型',
+                  filters.metaTags.firstOrNull ?? '',
+                  {
+                    '': '全部',
+                    for (final format in _categoryFormats)
+                      format: switch (format) {
+                        'TV' => 'TV番组',
+                        '剧场版' => '剧场番组',
+                        _ => format,
+                      },
+                  },
+                  (value) => onChanged(
+                    filters.copyWith(metaTags: value.isEmpty ? [] : [value]),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _options(
+                  context,
+                  '题材',
+                  filters.tags.firstOrNull ?? '',
+                  {
+                    '': '全部',
+                    for (final tag in {..._categoryTags, ...filters.tags})
+                      tag: tag,
+                  },
+                  (value) => onChanged(
+                    filters.copyWith(tags: value.isEmpty ? [] : [value]),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                DropdownButtonFormField<String>(
+                  key: ValueKey('sidebar-year-$year'),
+                  initialValue: year,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: '放送年份'),
+                  items: [
+                    const DropdownMenuItem(value: '', child: Text('不限年份')),
+                    for (var year = DateTime.now().year; year >= 1900; year--)
+                      DropdownMenuItem(value: '$year', child: Text('$year 年')),
+                  ],
+                  onChanged: (value) => onYearChanged(value ?? ''),
+                ),
+                const SizedBox(height: 20),
+                _options(
+                  context,
+                  '排序',
+                  filters.sort,
+                  _categorySortLabels,
+                  (value) => onChanged(filters.copyWith(sort: value)),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          _options(
-            context,
-            '题材',
-            filters.tags.firstOrNull ?? '',
-            {
-              '': '全部',
-              for (final tag in {...defaultAnimeTags, ...filters.tags})
-                tag: tag,
-            },
-            (value) =>
-                onChanged(filters.copyWith(tags: value.isEmpty ? [] : [value])),
-          ),
-          const SizedBox(height: 20),
-          DropdownButtonFormField<String>(
-            key: ValueKey('sidebar-year-$year'),
-            initialValue: year,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: '放送年份'),
-            items: [
-              const DropdownMenuItem(value: '', child: Text('不限年份')),
-              for (var year = DateTime.now().year; year >= 1900; year--)
-                DropdownMenuItem(value: '$year', child: Text('$year 年')),
-            ],
-            onChanged: (value) => onYearChanged(value ?? ''),
-          ),
-          const SizedBox(height: 20),
-          _options(
-            context,
-            '排序',
-            filters.sort,
-            _categorySortLabels,
-            (value) => onChanged(filters.copyWith(sort: value)),
-          ),
-        ],
-      ),
+        ),
+      ],
     ),
   );
 

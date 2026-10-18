@@ -91,7 +91,7 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   double get _sidebarWidth =>
-      math.max(248.0, MediaQuery.textScalerOf(context).scale(100) + 120);
+      math.max(320.0, MediaQuery.textScalerOf(context).scale(100) + 180);
 
   bool _showExpandedSidebar(double width) =>
       width >= math.max(800.0, _sidebarWidth + 440);
@@ -208,7 +208,7 @@ class _CategoryPageState extends State<CategoryPage> {
               decoration: const InputDecoration(labelText: '题材'),
               items: [
                 const DropdownMenuItem(value: '', child: Text('不限题材')),
-                for (final option in {...defaultAnimeTags, ...filters.tags})
+                for (final option in {..._categoryTags, ...filters.tags})
                   DropdownMenuItem(value: option, child: Text(option)),
               ],
               onChanged: (value) => _apply(
@@ -317,30 +317,18 @@ class _CategoryPageState extends State<CategoryPage> {
       );
       return Scaffold(
         key: _scaffoldKey,
-        floatingActionButton: ListenableBuilder(
-          listenable: _controller,
-          builder: (context, _) {
-            final expandedSidebar =
-                _controller.filterLayout == CategoryFilterLayout.sidebar &&
-                _showExpandedSidebar(_availableWidth);
-            return Padding(
-              padding: EdgeInsets.only(
-                right:
-                    (_availableWidth >= 600 ? 8.0 : 0.0) +
-                    (expandedSidebar ? _sidebarWidth + 20 : 0.0),
-              ),
-              child: FloatingActionButton(
-                heroTag: 'category-back-to-top',
-                tooltip: '回到顶部',
-                onPressed: _backToTop,
-                child: const Icon(Icons.arrow_upward_rounded),
-              ),
-            );
-          },
+        floatingActionButton: FloatingActionButton(
+          heroTag: 'category-back-to-top',
+          tooltip: '回到顶部',
+          onPressed: _backToTop,
+          child: const Icon(Icons.arrow_upward_rounded),
         ),
         endDrawerEnableOpenDragGesture: false,
         endDrawer: Drawer(
-          width: math.min(360.0, MediaQuery.sizeOf(context).width - 48),
+          width: math.min(
+            _sidebarWidth + 32,
+            math.max(0.0, _availableWidth - 32),
+          ),
           child: SafeArea(
             child: ListenableBuilder(
               listenable: _controller,
@@ -431,7 +419,7 @@ class _CategoryPageState extends State<CategoryPage> {
             top: false,
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final inset = constraints.maxWidth < 600 ? 16.0 : 24.0;
+                const inset = StyleString.pageHorizontalPadding;
                 final width = math.max(0.0, constraints.maxWidth - inset * 2);
                 return ListenableBuilder(
                   listenable: _controller,
@@ -444,8 +432,9 @@ class _CategoryPageState extends State<CategoryPage> {
                     if (expanded &&
                         (_scaffoldKey.currentState?.isEndDrawerOpen ?? false)) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted)
+                        if (mounted) {
                           _scaffoldKey.currentState?.closeEndDrawer();
+                        }
                       });
                     }
                     return Padding(

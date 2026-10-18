@@ -3,6 +3,42 @@ part of 'category_page.dart';
 const _categoryFormats = ['TV', '剧场版', 'OVA', 'WEB', '动态漫画', '其他'];
 const _categorySortLabels = {'heat': '近期热度', 'rank': '排名优先', 'score': '评分最高'};
 
+// Bangumi's anime channel genres and adaptation sources, retaining the
+// existing common user tags for category browsing in all three layouts.
+final _categoryTags = List<String>.unmodifiable({
+  ...defaultAnimeTags,
+  '科幻',
+  '喜剧',
+  '同人',
+  '惊悚',
+  '推理',
+  '运动',
+  '耽美',
+  '音乐',
+  '战斗',
+  '冒险',
+  '萌系',
+  '穿越',
+  '玄幻',
+  '乙女',
+  '恐怖',
+  '历史',
+  '剧情',
+  '武侠',
+  '短片集',
+  '美食',
+  '职场',
+  '青春',
+  '泡面番',
+  '特摄',
+  '漫画改',
+  '游戏改',
+  '小说改',
+  '轻小说改',
+  '动画改',
+  '影视改',
+});
+
 class _CategoryFilterRows extends StatelessWidget {
   const _CategoryFilterRows({
     required this.filters,
@@ -43,7 +79,7 @@ class _CategoryFilterRows extends StatelessWidget {
           value: filters.tags.firstOrNull ?? '',
           options: {
             '': '全部',
-            for (final tag in {...defaultAnimeTags, ...filters.tags}) tag: tag,
+            for (final tag in {..._categoryTags, ...filters.tags}) tag: tag,
           },
           onChanged: (value) =>
               onChanged(filters.copyWith(tags: value.isEmpty ? [] : [value])),

@@ -9,6 +9,7 @@ import 'package:kazumi/modules/collect/collect_layout.dart';
 import 'package:kazumi/modules/collect/collect_module.dart';
 import 'package:kazumi/modules/collect/collect_type.dart';
 import 'package:kazumi/pages/collect/collect_library_query.dart';
+import 'package:kazumi/utils/constants.dart';
 
 part 'collect_library_card.dart';
 part 'collect_library_controls.dart';
@@ -163,9 +164,7 @@ class _CollectLibraryViewState extends State<CollectLibraryView>
           final paged = mobile &&
               MediaQuery.orientationOf(context) == Orientation.portrait &&
               constraints.maxHeight > 320;
-          final width = constraints.maxWidth.clamp(0.0, 1560.0);
-          final inset =
-              (constraints.maxWidth - width) / 2 + (compact ? 16.0 : 32.0);
+          const inset = StyleString.pageHorizontalPadding;
           final header = _header(query, compact: compact);
           return PageStorage(
             bucket: _resultsStorage,

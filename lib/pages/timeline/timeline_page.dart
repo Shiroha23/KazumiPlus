@@ -16,6 +16,7 @@ import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/pages/timeline/timeline_controller.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/utils/anime_season.dart';
+import 'package:kazumi/utils/constants.dart';
 
 part 'timeline_options.dart';
 part 'timeline_week_selector.dart';
@@ -69,7 +70,7 @@ class _TimelinePageState extends State<TimelinePage> {
                 controller: controller,
                 padding: materialBottomSheetContentPadding,
                 itemCount: years.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 24),
+                separatorBuilder: (_, _) => const SizedBox(height: 24),
                 itemBuilder: (context, index) {
                   final year = years[index];
                   return ContentSection(
@@ -151,10 +152,9 @@ class _TimelinePageState extends State<TimelinePage> {
     return LayoutBuilder(builder: (context, constraints) {
       final narrowPortrait = constraints.maxWidth < 600 &&
           constraints.maxHeight > constraints.maxWidth;
-      final sidePadding = constraints.maxWidth < 600 ? 16.0 : 24.0;
+      const inset = StyleString.pageHorizontalPadding;
       final contentWidth =
-          (constraints.maxWidth - sidePadding * 2).clamp(0.0, 1280.0);
-      final inset = (constraints.maxWidth - contentWidth) / 2;
+          (constraints.maxWidth - inset * 2).clamp(0.0, double.infinity);
       final minCardWidth = scaler.scale(16) > 24 ? 440.0 : 340.0;
       final columns =
           ((contentWidth + 12) / (minCardWidth + 12)).floor().clamp(1, 3);

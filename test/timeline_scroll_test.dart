@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
+import 'package:kazumi/bean/card/bangumi_timeline_card.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/pages/timeline/timeline_controller.dart';
 import 'package:kazumi/pages/timeline/timeline_page.dart';
@@ -37,7 +38,11 @@ void main() {
     await directory.delete(recursive: true);
   });
 
-  for (final size in [const Size(1280, 800), const Size(520, 850)]) {
+  for (final size in [
+    const Size(1280, 800),
+    const Size(520, 850),
+    const Size(1920, 1000),
+  ]) {
     testWidgets(
       'timeline headers stay fixed and season picker scrolls smoothly at $size',
       (tester) async {
@@ -63,6 +68,21 @@ void main() {
         final seasonPosition = tester.getTopLeft(season);
         final weekPosition = tester.getTopLeft(weekdays);
         final list = find.byType(CustomScrollView).hitTestable();
+        final grid = tester.widget<SliverGrid>(
+          find.descendant(of: list, matching: find.byType(SliverGrid)),
+        );
+        final columns =
+            (grid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount)
+                .crossAxisCount;
+        final cards = find.descendant(
+          of: list,
+          matching: find.byType(BangumiTimelineCard),
+        );
+        expect(tester.getRect(cards.first).left, 16);
+        expect(
+          size.width - tester.getRect(cards.at(columns - 1)).right,
+          closeTo(16, .01),
+        );
         final scroll = tester.widget<CustomScrollView>(list).controller!;
         await tester.sendEventToBinding(
           PointerScrollEvent(
