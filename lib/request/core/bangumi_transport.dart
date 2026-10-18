@@ -20,11 +20,16 @@ class BangumiAccelerationInterceptor extends Interceptor {
     final uri = options.uri;
     if (ApiEndpoints.bangumiPublicApiHosts.contains(uri.host)) {
       final acceleration = BangumiAcceleration.current;
-      // Local builds have no private mirror credentials. Use the public API
-      // over ECH for protected endpoints instead of sending an empty signature.
+      // Browse and native trending endpoints are unavailable on the mirror.
+      // Use the official API over ECH, also covering protected endpoints in
+      // unsigned local builds.
       final needsOfficialApi = acceleration == BangumiAcceleration.mirror &&
-          !hasBangumiMirrorCredentials &&
-          requiresBangumiMirrorSignature(uri, options.method);
+          ((options.method == 'GET' &&
+                  (uri.path == '/p1/subjects' ||
+                      uri.path == '/v0/subjects' ||
+                      uri.path == '/p1/trending/subjects')) ||
+              (!hasBangumiMirrorCredentials &&
+                  requiresBangumiMirrorSignature(uri, options.method)));
       switch (needsOfficialApi ? BangumiAcceleration.ech : acceleration) {
         case BangumiAcceleration.direct:
           break;

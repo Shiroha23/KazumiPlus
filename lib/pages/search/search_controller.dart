@@ -104,6 +104,7 @@ abstract class _SearchPageController with Store {
     do {
       final page = await BangumiApi.bangumiSearch(filterState.keyword,
           tags: filterState.tags,
+          metaTags: filterState.metaTags,
           limit: _searchPageSize,
           offset: _searchOffset,
           sort: filterState.sort,
@@ -119,7 +120,10 @@ abstract class _SearchPageController with Store {
       }
       pagesFetched++;
       _searchOffset += page.rawCount;
-      hasMoreSearchResults = page.rawCount == _searchPageSize;
+      hasMoreSearchResults = page.hasMore(
+        nextOffset: _searchOffset,
+        requestedLimit: _searchPageSize,
+      );
       final existingIds = bangumiList.map((item) => item.id).toSet();
       final newItems =
           page.items.where((item) => existingIds.add(item.id)).toList();

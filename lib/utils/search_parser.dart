@@ -6,10 +6,7 @@ class SearchDateRange {
   final String start;
   final String end;
 
-  const SearchDateRange({
-    required this.start,
-    required this.end,
-  });
+  const SearchDateRange({required this.start, required this.end});
 
   bool get isValid => start.isNotEmpty && end.isNotEmpty;
 
@@ -26,10 +23,7 @@ class SearchIntRange {
   final int? min;
   final int? max;
 
-  const SearchIntRange({
-    this.min,
-    this.max,
-  });
+  const SearchIntRange({this.min, this.max});
 
   bool get isValid => min != null || max != null;
 
@@ -48,10 +42,7 @@ class SearchDoubleRange {
   final double? min;
   final double? max;
 
-  const SearchDoubleRange({
-    this.min,
-    this.max,
-  });
+  const SearchDoubleRange({this.min, this.max});
 
   bool get isValid => min != null || max != null;
 
@@ -76,6 +67,7 @@ class SearchFilterState {
   final String id;
   final String keyword;
   final List<String> tags;
+  final List<String> metaTags;
   final String sort;
   final String season;
   final SearchDateRange? dateRange;
@@ -87,6 +79,7 @@ class SearchFilterState {
     this.id = '',
     this.keyword = '',
     this.tags = const [],
+    this.metaTags = const [],
     this.sort = 'heat',
     this.season = '',
     this.dateRange,
@@ -99,6 +92,7 @@ class SearchFilterState {
 
   bool get hasAdvancedFilters =>
       tags.isNotEmpty ||
+      metaTags.isNotEmpty ||
       sort != 'heat' ||
       season.isNotEmpty ||
       dateRange != null ||
@@ -116,6 +110,7 @@ class SearchFilterState {
     String? id,
     String? keyword,
     List<String>? tags,
+    List<String>? metaTags,
     String? sort,
     Object? season = _unchanged,
     Object? dateRange = _unchanged,
@@ -127,6 +122,7 @@ class SearchFilterState {
       id: id ?? this.id,
       keyword: keyword ?? this.keyword,
       tags: tags ?? this.tags,
+      metaTags: metaTags ?? this.metaTags,
       sort: sort ?? this.sort,
       season: identical(season, _unchanged) ? this.season : season as String,
       dateRange: identical(dateRange, _unchanged)
@@ -147,11 +143,15 @@ class SearchParser {
   final String query;
 
   static const String _fieldNames =
-      'id|tag|sort|season|date|rank|score|weekday|nsfw';
+      'id|tag|meta|sort|season|date|rank|score|weekday|nsfw';
 
   final RegExp _idRegExp = RegExp(r'id:(\d+)', caseSensitive: false);
   final RegExp _tagRegExp = RegExp(
-    r'(?:^|\s)tag:([^\s]+?)(?=(?:id|tag|sort|season|date|rank|score|weekday|nsfw):|\s|$)',
+    r'(?:^|\s)tag:([^\s]+?)(?=(?:id|tag|meta|sort|season|date|rank|score|weekday|nsfw):|\s|$)',
+    caseSensitive: false,
+  );
+  final RegExp _metaTagRegExp = RegExp(
+    r'meta:([^\s]+?)(?=(?:id|tag|meta|sort|season|date|rank|score|weekday|nsfw):|\s|$)',
     caseSensitive: false,
   );
   final RegExp _sortRegExp = RegExp(r'sort:([\w\-]+)', caseSensitive: false);
@@ -252,6 +252,12 @@ class SearchParser {
       id: parseId() ?? '',
       keyword: parseKeywords(),
       tags: parseTags(),
+      metaTags: _metaTagRegExp
+          .allMatches(query)
+          .map((match) => match.group(1)!.trim())
+          .where((tag) => tag.isNotEmpty)
+          .toSet()
+          .toList(),
       sort: parseSort() ?? 'heat',
       season: parseSeason() ?? '',
       dateRange: parseDateRange(),
@@ -272,6 +278,10 @@ class SearchParser {
     for (final tag in state.tags) {
       final normalized = tag.trim();
       if (normalized.isNotEmpty) tokens.add('tag:$normalized');
+    }
+    for (final tag in state.metaTags) {
+      final normalized = tag.trim();
+      if (normalized.isNotEmpty) tokens.add('meta:$normalized');
     }
     if (state.sort.isNotEmpty && state.sort != 'heat') {
       tokens.add('sort:${state.sort}');
@@ -295,8 +305,10 @@ class SearchParser {
   }
 
   static SearchDateRange? seasonToDateRange(String season) {
-    final match =
-        RegExp(r'^(\d{4})Q([1-4])$', caseSensitive: false).firstMatch(season);
+    final match = RegExp(
+      r'^(\d{4})Q([1-4])$',
+      caseSensitive: false,
+    ).firstMatch(season);
     if (match == null) return null;
     final year = int.parse(match.group(1)!);
     final quarter = int.parse(match.group(2)!);

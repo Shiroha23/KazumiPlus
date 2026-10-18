@@ -3,6 +3,29 @@ import 'package:kazumi/utils/search_parser.dart';
 
 void main() {
   group('SearchParser', () {
+    test(
+      'keeps anime format separate from genre when copying and serializing',
+      () {
+        final state = SearchParser(
+          '番剧 tag:日常meta:TVsort:score',
+        ).toFilterState();
+        expect(state.keyword, '番剧');
+        expect(state.tags, ['日常']);
+        expect(state.metaTags, ['TV']);
+        expect(state.sort, 'score');
+        final copied = state.copyWith(tags: ['奇幻']);
+        final restored = SearchParser(
+          SearchParser.fromFilterState(copied),
+        ).toFilterState();
+        expect(restored.metaTags, ['TV']);
+        expect(restored.tags, ['奇幻']);
+        expect(
+          const SearchFilterState(metaTags: ['TV']).hasAdvancedFilters,
+          isTrue,
+        );
+        expect(state.copyWith(metaTags: []).metaTags, isEmpty);
+      },
+    );
     test('keeps id search behavior', () {
       final parser = SearchParser('id:12345 tag:日本 sort:rank');
 
@@ -32,8 +55,10 @@ void main() {
       final state = parser.toFilterState();
 
       expect(state.season, '2026Q1');
-      expect(state.effectiveDateRange,
-          const SearchDateRange(start: '2025-12-01', end: '2026-03-01'));
+      expect(
+        state.effectiveDateRange,
+        const SearchDateRange(start: '2025-12-01', end: '2026-03-01'),
+      );
     });
 
     test('parses custom date range', () {
@@ -49,8 +74,10 @@ void main() {
       final parser = SearchParser('rank:1..5000 score:7.5..10');
 
       expect(parser.parseRankRange(), const SearchIntRange(min: 1, max: 5000));
-      expect(parser.parseScoreRange(),
-          const SearchDoubleRange(min: 7.5, max: 10.0));
+      expect(
+        parser.parseScoreRange(),
+        const SearchDoubleRange(min: 7.5, max: 10.0),
+      );
     });
 
     test('parses weekday and ignores nsfw tokens', () {
@@ -58,8 +85,10 @@ void main() {
 
       expect(parser.parseWeekdays(), [1, 3, 5]);
       expect(parser.parseKeywords(), isEmpty);
-      expect(SearchParser.fromFilterState(parser.toFilterState()),
-          'weekday:1,3,5');
+      expect(
+        SearchParser.fromFilterState(parser.toFilterState()),
+        'weekday:1,3,5',
+      );
     });
 
     test('serializes filter state back to query syntax', () {

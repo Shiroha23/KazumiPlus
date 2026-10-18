@@ -21,10 +21,27 @@ class BangumiSearchPage {
   const BangumiSearchPage({
     required this.items,
     required this.rawCount,
+    this.total,
+    this.limit,
+    this.nextOffset,
+    this.hasNextPage,
   });
 
   final List<BangumiItem> items;
   final int rawCount;
+  final int? total;
+  final int? limit;
+  final int? nextOffset;
+  final bool? hasNextPage;
+
+  bool hasMore({required int nextOffset, required int requestedLimit}) {
+    if (hasNextPage != null) return hasNextPage!;
+    if (rawCount == 0) return false;
+    // The server can cap the page size below the requested limit.
+    if (total != null) return nextOffset < total!;
+    final effectiveLimit = limit != null && limit! > 0 ? limit! : requestedLimit;
+    return rawCount >= effectiveLimit;
+  }
 }
 
 class BangumiApi {
@@ -192,6 +209,11 @@ class BangumiApi {
   }
 
   static Future<List<BangumiItem>> getBangumiTrendsList(
+      {int type = 2, int limit = 24, int offset = 0}) async =>
+      (await getBangumiTrendsPage(type: type, limit: limit, offset: offset))
+          ?.items ?? [];
+
+  static Future<BangumiSearchPage?> getBangumiTrendsPage(
       {int type = 2, int limit = 24, int offset = 0}) async {
     List<BangumiItem> bangumiList = [];
     var params = <String, dynamic>{
@@ -210,10 +232,16 @@ class BangumiApi {
           bangumiList.add(BangumiItem.fromJson(jsonItem['subject']));
         }
       }
+      return BangumiSearchPage(
+        items: bangumiList,
+        rawCount: jsonList.length,
+        total: (jsonData['total'] as num?)?.toInt(),
+        limit: (jsonData['limit'] as num?)?.toInt() ?? limit,
+      );
     } catch (e) {
       KazumiLogger().e('Network: resolve bangumi trends list failed', error: e);
     }
-    return bangumiList;
+    return null;
   }
 
   static String buildBangumiMirrorPopularPath({
@@ -235,6 +263,13 @@ class BangumiApi {
     String tag = '',
     int limit = 24,
     int offset = 0,
+  }) async => (await getBangumiMirrorPopularPage(
+      tag: tag, limit: limit, offset: offset))?.items ?? [];
+
+  static Future<BangumiSearchPage?> getBangumiMirrorPopularPage({
+    String tag = '',
+    int limit = 24,
+    int offset = 0,
   }) async {
     List<BangumiItem> bangumiList = [];
     try {
@@ -252,11 +287,19 @@ class BangumiApi {
           bangumiList.add(BangumiItem.fromJson(jsonItem));
         }
       }
+      return BangumiSearchPage(
+        items: bangumiList,
+        rawCount: jsonList.length,
+        total: jsonData is Map ? (jsonData['total'] as num?)?.toInt() : null,
+        limit: jsonData is Map
+            ? (jsonData['limit'] as num?)?.toInt() ?? limit
+            : limit,
+      );
     } catch (e) {
       KazumiLogger()
           .e('Network: resolve bangumi mirror popular list failed', error: e);
     }
-    return bangumiList;
+    return null;
   }
 
   static List<String> _buildNumberFilter<T extends num>(T? min, T? max) {
@@ -266,9 +309,90 @@ class BangumiApi {
     ];
   }
 
+  /// Native browse uses fixed 24-entry pages and reports total pages.
+  static Future<BangumiSearchPage?> getBangumiCategoryPage({
+    String format = '',
+    List<String> tags = const [],
+    int? year,
+    String sort = 'heat',
+    int offset = 0,
+  }) async {
+    const categories = {'TV': 1, 'OVA': 2, '剧场版': 3, 'WEB': 5, '动态漫画': 2006};
+    const pageSize = 24;
+    final page = offset ~/ pageSize + 1;
+    try {
+      final data = await _client.get(
+        '${ApiEndpoints.bangumiAPINextDomain}/p1/subjects',
+        queryParameters: {
+          'type': 2,
+          'sort': sort == 'heat' ? 'trends' : 'rank',
+          'page': page,
+          if (format.isNotEmpty) 'cat': categories[format]!,
+          'year': ?year,
+          if (tags.isNotEmpty) 'tags': tags,
+          if (tags.isNotEmpty) 'tagsCat': 'subject',
+        },
+      );
+      final raw = data['data'] as List;
+      final items = <BangumiItem>[];
+      for (final entry in raw) {
+        if (entry is! Map<String, dynamic> || entry['nsfw'] == true) continue;
+        try {
+          final item = BangumiItem.fromJson(entry);
+          if (item.nameCn.isNotEmpty) items.add(item);
+        } catch (error) {
+          KazumiLogger().e('Network: resolve category item failed', error: error);
+        }
+      }
+      return BangumiSearchPage(
+        items: items,
+        rawCount: raw.length,
+        limit: pageSize,
+        nextOffset: page * pageSize,
+        hasNextPage: page < (data['total'] as num).toInt(),
+      );
+    } catch (error) {
+      KazumiLogger().e('Network: resolve category failed', error: error);
+      return null;
+    }
+  }
+
+  // The next browse endpoint ignores cat=0; v0 handles this category correctly.
+  static Future<BangumiSearchPage?> getBangumiOtherAnimePage({
+    int offset = 0,
+  }) async {
+    try {
+      final data = await _client.get(
+        '${ApiEndpoints.bangumiAPIDomain}/v0/subjects',
+        queryParameters: {
+          'type': 2,
+          'cat': 0,
+          'sort': 'rank',
+          'limit': 100,
+          'offset': offset,
+        },
+      );
+      final raw = data['data'] as List;
+      return BangumiSearchPage(
+        items: [
+          for (final entry in raw)
+            if (entry is Map<String, dynamic> && entry['nsfw'] != true)
+              BangumiItem.fromJson(entry),
+        ],
+        rawCount: raw.length,
+        total: (data['total'] as num).toInt(),
+        limit: (data['limit'] as num?)?.toInt() ?? 100,
+      );
+    } catch (error) {
+      KazumiLogger().e('Network: resolve other anime failed', error: error);
+      return null;
+    }
+  }
+
   static Map<String, dynamic> buildBangumiSearchParams(
     String keyword, {
     List<String> tags = const [],
+    List<String> metaTags = const [],
     String sort = 'heat',
     SearchDateRange? dateRange,
     SearchIntRange? rankRange,
@@ -284,6 +408,7 @@ class BangumiApi {
     final filter = <String, dynamic>{
       "type": [2],
       "tag": tags,
+      if (metaTags.isNotEmpty) "meta_tags": metaTags,
       "rank": rankFilter,
       "nsfw": false
     };
@@ -308,6 +433,7 @@ class BangumiApi {
 
   static Future<BangumiSearchPage?> bangumiSearch(String keyword,
       {List<String> tags = const [],
+      List<String> metaTags = const [],
       int limit = 20,
       int offset = 0,
       String sort = 'heat',
@@ -320,6 +446,7 @@ class BangumiApi {
     final params = buildBangumiSearchParams(
       keyword,
       tags: tags,
+      metaTags: metaTags,
       sort: sort,
       dateRange: dateRange,
       rankRange: rankRange,
@@ -351,6 +478,8 @@ class BangumiApi {
       return BangumiSearchPage(
         items: bangumiList,
         rawCount: jsonList.length,
+        total: (jsonData['total'] as num?)?.toInt(),
+        limit: (jsonData['limit'] as num?)?.toInt(),
       );
     } catch (e) {
       KazumiLogger().e('Network: unknown search problem', error: e);

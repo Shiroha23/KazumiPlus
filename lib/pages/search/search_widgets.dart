@@ -11,6 +11,7 @@ String _sortLabel(String sort) => _searchSortLabels[sort] ?? '热度';
 
 String _filterSummary(SearchFilterState state) => [
       ...state.tags,
+      ...state.metaTags,
       if (state.season.isNotEmpty) state.season,
       if (state.season.isEmpty && state.dateRange != null)
         '${state.dateRange!.start} 至 ${state.dateRange!.end}',

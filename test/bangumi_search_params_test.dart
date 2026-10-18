@@ -12,6 +12,7 @@ void main() {
       expect(params['sort'], 'heat');
       expect(filter['type'], [2]);
       expect(filter['tag'], isEmpty);
+      expect(filter.containsKey('meta_tags'), isFalse);
       expect(filter['rank'], [">=0", "<=99999"]);
       expect(filter['nsfw'], isFalse);
     });
@@ -20,6 +21,7 @@ void main() {
       final params = BangumiApi.buildBangumiSearchParams(
         'bocchi',
         tags: ['音乐', '漫画改'],
+        metaTags: ['TV'],
         sort: 'score',
         dateRange: const SearchDateRange(
           start: '2022-09-01',
@@ -34,6 +36,7 @@ void main() {
       expect(params['keyword'], 'bocchi');
       expect(params['sort'], 'score');
       expect(filter['tag'], ['音乐', '漫画改']);
+      expect(filter['meta_tags'], ['TV']);
       expect(filter['air_date'], [">=2022-09-01", "<2022-12-01"]);
       expect(filter['rank'], [">=1", "<=1000"]);
       expect(filter['rating'], [">=8.0", "<=10.0"]);

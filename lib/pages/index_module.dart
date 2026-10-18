@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/widget/error_widget.dart';
 import 'package:kazumi/bean/widget/image_preview.dart';
+import 'package:kazumi/pages/category/category_controller.dart';
+import 'package:kazumi/pages/category/category_module.dart';
 import 'package:kazumi/pages/collect/collect_module.dart';
 import 'package:kazumi/pages/index_page.dart';
 import 'package:kazumi/pages/info/info_module.dart';
@@ -44,6 +46,7 @@ final tabModule = createModule(
     c
       // Tab state survives tab switches, but is released with the whole shell.
       ..addSingleton<PopularController>(PopularController.new)
+      ..addSingleton<CategoryController>(() => CategoryController())
       ..addSingleton<TimelineController>(TimelineController.new)
       ..route(
         '/',
@@ -59,6 +62,7 @@ final tabModule = createModule(
               child: (context, state) => const SizedBox.shrink(),
             )
             ..module(popularModule)
+            ..module(categoryModule)
             ..module(timelineModule)
             ..module(collectModule)
             ..module(myModule);
